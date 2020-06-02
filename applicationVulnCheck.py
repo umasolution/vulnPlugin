@@ -21,6 +21,9 @@ from pexpect import pxssh
 import argparse
 import sqlite3
 from datetime import datetime
+reload(sys)
+sys.setrecursionlimit(10000)
+sys.setdefaultencoding("utf-8")
 
 
 class drupalPluginVulnerabilities():
@@ -443,6 +446,9 @@ class drupalPluginVulnerabilities():
 				print location
 				print file_regex
 
+				location = location.encode('utf-8')
+				file_regex = file_regex.encode('utf-8')
+				
 		    		for filename in glob2.glob('%s/**/%s' % (location, file_regex), recursive=True):
 					res = {}
        					product = ''
@@ -523,7 +529,7 @@ class drupalPluginVulnerabilities():
                 print "[ OK ] Vulnerabilities Report ready - %s/%s.json" % (self.report_path, self.report_name)
 
 
-                url = "%s://%s:%s/api/report-upload/language/%s" % (self.protocol, self.server, self.port, self.tokenId)
+                url = "%s://%s:%s/api/report-upload/application/%s" % (self.protocol, self.server, self.port, self.tokenId)
                 fin = open('%s/%s.json' % (self.report_path, self.report_name), 'rb')
                 files = {'file': fin}
                 response = requests.post(url, files = files)

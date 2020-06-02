@@ -22,6 +22,7 @@ class getUbuntuVulnerabilities():
 	def __init__(self, reportPath, project, targetFolder, owner, username, password, remoteIp):
 		self.reportPath = reportPath
 		self.sourcefolder = targetFolder
+		self.target = targetFolder
 		self.project = project
 		self.username = username
 		self.password = password
@@ -50,26 +51,24 @@ class getUbuntuVulnerabilities():
 			print "[ INFO ] Token invalid or expire, please login on portal and verify the TokenId"
 			sys.exit(1)
 		
-
 		self.results = {}
-		self.results['header'] = {}
-		self.results['header']['project'] = self.project
-		self.results['header']['project owner'] = owner
+                self.results['header'] = {}
+                self.results['header']['project'] = self.project
+                self.results['header']['project owner'] = owner
+                path1=os.path.dirname(self.reportPath)
+                self.results['header']['repository'] = os.path.basename(path1)
 
-		path=os.path.dirname(self.reportPath)
-		self.results['header']['repository'] = os.path.basename(path)
-		
-		self.report_path = reportPath
-		now = datetime.now()
-		self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
+                self.report_path = reportPath
+                now = datetime.now()
+                self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
 
-		self.results['header']['date'] = self.report_name
-		self.results['header']['source type'] = "source"
+                self.results['header']['date'] = self.report_name
+                self.results['header']['source type'] = "source"
 
-		self.vuln_depe = []
-		self.vuln_found = []
-		self.testedWith = []
-		self.dependanciesCount = []
+                self.vuln_depe = []
+                self.vuln_found = []
+                self.testedWith = []
+                self.dependanciesCount = []
 		self.vuln_product = []
 		self.med = []
 		self.low = []
@@ -213,12 +212,14 @@ class getUbuntuVulnerabilities():
 		print "[ OK ] Scanning Completed"
 			
 		self.results['header']['tested with'] = ','.join(self.testedWith)
-		self.results['Issues']['severity'] = {}
-		self.results['Issues']['severity']['low'] = len(self.low)
-		self.results['Issues']['severity']['high'] = len(self.hig)
-		self.results['Issues']['severity']['medium'] = len(self.med)
-		self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-		self.results['header']['vulnerable dependencies'] = len(self.vuln_product)
+                self.results['header']['severity'] = {}
+                self.results['header']['dependancies'] = len(self.dependanciesCount)
+                self.results['header']['severity']['low'] = len(self.low)
+                self.results['header']['severity']['high'] = len(self.hig)
+                self.results['header']['severity']['medium'] = len(self.med)
+                self.results['header']['vulnerabilities found'] = len(self.vuln_found)
+                self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
+
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
 			json.dump(self.results, f)
@@ -226,7 +227,7 @@ class getUbuntuVulnerabilities():
 		print "[ OK ] Vulnerabilities Report ready - %s/%s.json" % (self.report_path, self.report_name)
 
 
-		url = "%s://%s:%s/api/report-upload/%s" % (self.protocol, self.server, self.port, self.tokenId)
+		url = "%s://%s:%s/api/report-upload/platform/%s" % (self.protocol, self.server, self.port, self.tokenId)
 		fin = open('%s/%s.json' % (self.report_path, self.report_name), 'rb')
 		files = {'file': fin}
 		response = requests.post(url, files = files)
