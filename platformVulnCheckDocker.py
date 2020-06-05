@@ -19,7 +19,7 @@ import argparse
 from datetime import datetime
 
 
-class getUbuntuVulnerabilities():
+class platformVulnCheckDocker():
 	def __init__(self, reportPath, project, targetFolder, reponame, imagename, imagetags, owner, username, password):
 		self.reportPath = reportPath
 		self.sourcefolder = targetFolder
@@ -76,9 +76,10 @@ class getUbuntuVulnerabilities():
 		self.med = []
 		self.low = []
 		self.hig = []
+		self.cri = []
 
 
-	def getsshPackageUbuntu(self):
+	def getsshPackagePlatform(self):
 		s = pxssh.pxssh()
 		s.login(self.remoteIp, self.username, self.password)
 		s.sendline('sudo apt list --installed')
@@ -89,72 +90,120 @@ class getUbuntuVulnerabilities():
 
 
 	def lt(self, vulnVer, installedVer):
-		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "eq" "%s"); then echo true; fi' % (vulnVer, installedVer))
-		print 'if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer)
-    		if output == "true":
+		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "eq" "%s"); then echo "true"; fi' % (vulnVer, installedVer))
+		print 'if $(dpkg --compare-versions "%s" "eq" "%s"); then echo true; fi' % (vulnVer, installedVer)
+		if "true" in output:
         		return False
 
-		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer))
-		print 'if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer)
-    		if output == "true":
+		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "lt" "%s"); then echo "true"; fi' % (vulnVer, installedVer))
+		print 'if $(dpkg --compare-versions "%s" "gt" "%s"); then echo true; fi' % (vulnVer, installedVer)
+    		if "true" in output:
         		return False
 
 		return True
 		
 
-	def matchVer(self, cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersions):
-		severity = "Medium"
+	def matchVer(self, cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersions, os_name, severity, image):
+		print "======================="
+		print "%s - %s - %s" % (product, versions, mVersions)
             	if self.lt(versions, mVersions):
-			print "1 - %s" % versions
-			print "2 - %s" % mVersions
-			if product not in self.results['Issues']:
-				self.results['Issues'][product] = []
-
+			print "--- In --"
 			res = {}
 			res['cve_id'] = cve_id
+			res['product'] = product
 			res['versions'] = versions
 			res['vectorString'] = vectorString
 			res['baseScore'] = baseScore
 			res['pub_date'] = pub_date
 			res['cwe'] = cwe
 			res['name'] = name
-			res['usn_id'] = usn_id
+			res['severity'] = severity
+			severity = severity.lower()
+
+			if os_name == "ubuntu":
+				res['usn_id'] = usn_id
+
+			if os_name == "debian":
+				res['dsa_id'] = usn_id
+
 			res['reference'] = reference
 			res['Installed Version'] = mVersions
-			res['Vulnerable Version'] = versions
-
-			self.results['Issues'][product].append(res)
-
+			res['Patch Version'] = versions
 
 		   	if product not in self.vuln_product:
 				self.vuln_product.append(product)
 
-		   	if cve_id not in self.vuln_found:
+			if severity not in self.results['Issues'][image]['Issues']:
+				self.results['Issues'][image]['Issues'][severity] = []
+
+			if res not in self.results['Issues'][image]['Issues'][severity]:
+				self.results['Issues'][image]['Issues'][severity].append(res)
+
 				self.vuln_found.append(cve_id)
 
-				if severity == "Medium":
+				if severity == "medium":
 					self.med.append("Medium")
 		        	if severity == "high":
 					self.hig.append("High")
 		        	if severity == "low":
 					self.low.append("Low")
+		        	if severity == "critical":
+					self.cri.append("Critical")
+
+			
 
 
 
-	def getVulnData(self, product, mVersion, platform):
-		if product in self.responseData[platform]:
-                    for row in self.responseData[platform][product]:
-                        cve_id = row['cve_id']
-			versions = row['version']
-			vectorString = row['vectorString']
-			baseScore = row['baseScore']
-			pub_date = row['pub_date']
-			cwe = row['cwe_text']
-			name = row['name']
-			usn_id = row['usn_id']
-			reference = "https://usn.ubuntu.com/%s/" % usn_id
-			print "1 - %s" % cve_id
-			self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersion)
+	def getVulnData(self, product, mVersion, platform, os_name, image):
+		if ":" in product:
+			product = product.split(":")[0]
+
+		platformArray = []
+		if re.findall(r'Ubuntu\s+(\d+.\d+.\d+)\s+LTS', str(platform)):
+			platform = "%s LTS" % re.findall(r'(Ubuntu\s+\d+.\d+)', str(platform))[0]
+			platformArray.append(platform)
+			platform = "%s ESM" % re.findall(r'(Ubuntu\s+\d+.\d+)', str(platform))[0]
+			platformArray.append(platform)
+		elif re.findall(r'Ubuntu\s+(\d+.\d+.\d+)\s+ESM', str(platform)):
+			platform = "%s ESM" % re.findall(r'(Ubuntu\s+\d+.\d+)', str(platform))[0]
+			platformArray.append(platform)
+		else:
+			platform = platform
+			platformArray.append(platform)
+
+
+		for platform in platformArray:
+		    if platform in self.responseData:
+		    	if product in self.responseData[platform]:
+		            if os_name == "ubuntu":
+                    	    	for row in self.responseData[platform][product]:
+                        		cve_id = row['cve_id']
+					versions = row['version']
+					vectorString = row['vectorString']
+					baseScore = row['baseScore']
+					pub_date = row['pub_date']
+					cwe = row['cwe_text']
+					name = row['name']
+					usn_id = row['usn_id']
+					severity = row['severity']
+					reference = "https://usn.ubuntu.com/%s/" % usn_id
+					print "1 - %s" % cve_id
+					self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersion, os_name, severity, image)
+
+		            if os_name == "debian":
+                    	    	for row in self.responseData[platform][product]:
+                        		cve_id = row['cve_id']
+					versions = row['version']
+					vectorString = row['vectorString']
+					baseScore = row['baseScore']
+					pub_date = row['pub_date']
+					cwe = row['cwe_text']
+					name = row['name']
+					dsa_id = row['dsa_id']
+					severity = row['severity']
+					reference = "https://www.debian.org/security/%s/%s" % (cve_id.split("-")[1], dsa_id)
+					print "1 - %s" % cve_id
+					self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, dsa_id, reference, mVersion, os_name, severity, image)
 
 	def getRepoImageJson(Self, authUser, authPass):
                 headers = {
@@ -165,7 +214,6 @@ class getUbuntuVulnerabilities():
 
                 response = requests.post('https://hub.docker.com/v2/users/login/', headers=headers, data=data)
 
-		print response.text
                 resp = json.loads(response.text)
                 token = resp['token']
 
@@ -280,17 +328,20 @@ class getUbuntuVulnerabilities():
                                 imageName = "jaysnpael/%s:%s" % (imgName, tag)
                                 image = client.images.pull("%s" % (imageName))
 
-                                cmd = 'docker run --name test%s_bash --rm -i -t %s /bin/bash -c "cat /etc/os-release; dpkg -la"' % (p, imageName)
+                                cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release; dpkg -la"' % (imageName)
                                 status, output = commands.getstatusoutput(cmd)
 
                                 data = output
+				print data
 
-                                os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
-                                os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
-                                if os_name.strip() == "debian":
-                                        os_type = re.findall(r'^VERSION=\"\d+\s+\((.*)\)\"', str(data), flags=re.MULTILINE)[0]
-                                else:
-                                        os_type = ''
+                        	os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                        	os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                        	if os_name.strip() == "debian":
+                        		os_type = re.findall(r'^VERSION=\"\d+\s+\((.*)\)\"', str(data), flags=re.MULTILINE)[0]
+                        	elif  os_name.strip() == "ubuntu":
+					os_type = re.findall(r'PRETTY_NAME=\"(.*)\"', str(data), flags=re.MULTILINE)[0]
+				else:
+					os_type = ''
 
 
                                 imageName = str(imageName)
@@ -302,7 +353,7 @@ class getUbuntuVulnerabilities():
 				if os_name not in self.packageLists:
 					os_name = os_name.strip()
                                 	self.packageLists[os_name] = {}
-                                	self.packageLists[os_name]['os_type'] = os_type.strip()
+                                	self.packageLists[os_name]['os_type'] = str(os_type.strip())
 					self.packageLists[os_name]['os_version'] = str(os_version.replace('"', '').strip())
 
 
@@ -323,7 +374,7 @@ class getUbuntuVulnerabilities():
 
 				cmd = "docker image rm -f %s" % imageName
 				status, output = commands.getstatusoutput(cmd)
-				print output
+
 		return results
 
 	def getInstallPkgList(self):
@@ -349,19 +400,28 @@ class getUbuntuVulnerabilities():
 		return unique_list
 
 
-	def scanUbuntuPackage(self):
-		self.platform = "Ubuntu 16.04 LTS"
+	def scanPlatformPackage(self):
 		print "[ OK ] Preparing..."
 		output = self.getInstallPkgList()
 		print "[ OK ] Scanning started"
 		self.results['Issues'] = {}
+		self.results['packages'] = output
 
 		for image in output:
 		    if len(output[image]['pkgDetails']) > 0:
 			print image
+
 			os_name = output[image]['os_name']
 			os_version = output[image]['os_version']
 			os_type = output[image]['os_type']
+
+			if image not in self.results['Issues']:
+				self.results['Issues'][image] = {}
+				self.results['Issues'][image]['os name'] = os_name
+				self.results['Issues'][image]['os version'] = os_version
+				self.results['Issues'][image]['os type'] = os_type
+				self.results['Issues'][image]['Issues'] = {}
+			
 
 			print "[ OK ] Database sync started"
 			self.syncData(os_name)
@@ -379,7 +439,7 @@ class getUbuntuVulnerabilities():
 				else:
 					platform = os_version
 				
-			    	self.getVulnData(product, version, platform)
+			    	self.getVulnData(product, version, platform, os_name, image)
 
 		print "[ OK ] Scanning Completed"
 			
@@ -418,10 +478,8 @@ class getUbuntuVulnerabilities():
 		}
 		payload = "{\"data\": \""+ os_name + "\"}"
 		response = requests.request("POST", url, headers=headers, data=payload)
-		print response.text
 		self.responseData = response.json()
 
-		print self.responseData
 		
 
 if __name__ == "__main__":
@@ -454,7 +512,7 @@ if __name__ == "__main__":
 			sys.exit(1)
 
 
-	res = getUbuntuVulnerabilities(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner, results.username, results.password)
-	res.scanUbuntuPackage()
+	res = platformVulnCheckDocker(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner, results.username, results.password)
+	res.scanPlatformPackage()
 
 
