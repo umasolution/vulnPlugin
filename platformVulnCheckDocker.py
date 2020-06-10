@@ -296,8 +296,9 @@ class platformVulnCheckDocker():
 		images = client.images.list()
 
 		for image in images:
-			imageName = re.findall(r'<Image: \'(.*)\'>', str(image))[0]
-
+		    imgs = re.findall(r'<Image: (\'.*\')>', str(image))[0]
+		    imageNames = re.findall(r'\'(.*?)\'', str(imgs))
+		    for imageName in imageNames:
                         cmd = 'docker run --rm -i -t %s /bin/sh -c "cat /etc/os-release;"' % (imageName)
                        	status, output = commands.getstatusoutput(cmd)
                         data = output
