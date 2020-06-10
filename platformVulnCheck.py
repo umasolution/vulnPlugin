@@ -88,12 +88,12 @@ class platformVulnCheck():
 
 	def lt(self, vulnVer, installedVer):
 		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "eq" "%s"); then echo true; fi' % (vulnVer, installedVer))
-		print 'if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer)
+		#print 'if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer)
     		if output == "true":
         		return False
 
 		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer))
-		print 'if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer)
+		#print 'if $(dpkg --compare-versions "%s" "lt" "%s"); then echo true; fi' % (vulnVer, installedVer)
     		if output == "true":
         		return False
 
@@ -101,8 +101,6 @@ class platformVulnCheck():
 		
 
 	def matchVer(self, cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersions, severity, os_name):
-		print "======================="
-                print "%s - %s - %s" % (product, versions, mVersions)
             	if self.lt(versions, mVersions):
                         res = {}
                         res['cve_id'] = cve_id
@@ -180,7 +178,6 @@ class platformVulnCheck():
                                 	usn_id = row['usn_id']
 					severity = row['severity']
                                 	reference = "https://usn.ubuntu.com/%s/" % usn_id
-                                	print "1 - %s" % cve_id
                                 	self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersion, severity, os_name)
 
 			    if os_name == "debian":
@@ -195,7 +192,6 @@ class platformVulnCheck():
                                 	dsa_id = row['dsa_id']
 					severity = row['severity']
                                 	reference = "https://www.debian.org/security/%s/%s" % (cve_id.split("-")[1], dsa_id)
-                                	print "1 - %s" % cve_id
                                 	self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, dsa_id, reference, mVersion, severity, os_name)
 
 
@@ -206,10 +202,8 @@ class platformVulnCheck():
 
 		if self.target.lower() == "local":
 			cmd = 'cat /etc/os-release'
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
 			os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
@@ -228,10 +222,8 @@ class platformVulnCheck():
 
 			if os_name.strip() == "debian" or os_name.strip() == "ubuntu":
                                 cmd = 'dpkg -la > t; cat t'
-                                print cmd
                                 status, output = commands.getstatusoutput(cmd)
                                 data = output
-                                print data
 
                                 if re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data)):
                                     pkgDetails = re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data))
@@ -298,8 +290,6 @@ class platformVulnCheck():
 	def scanPlatformPackage(self):
 		print "[ OK ] Preparing..."
 		output = self.getInstallPkgList()
-	
-
 		print "[ OK ] Scanning started"
 
 		self.results['Issues'] = {}

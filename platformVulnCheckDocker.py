@@ -20,13 +20,11 @@ from datetime import datetime
 
 
 class platformVulnCheckDocker():
-	def __init__(self, reportPath, project, targetFolder, reponame, imagename, imagetags, owner, username, password):
+	def __init__(self, reportPath, project, target, reponame, imagename, imagetags, owner):
 		self.reportPath = reportPath
-		self.sourcefolder = targetFolder
-		self.target = targetFolder
+		self.sourcefolder = target
+		self.target = target
 		self.project = project
-		self.username = username
-		self.password = password
 		self.reponame = reponame
 		self.imagename = imagename
 		self.imagetags = imagetags
@@ -44,6 +42,15 @@ class platformVulnCheckDocker():
 		self.port = configData['port']
 		self.protocol = configData['protocol']
 
+
+		if target != "local":
+			self.username = configData[target]['uid']
+			self.password = configData[target]['secret']
+			self.repoUrl = configData[target]['url']
+			if not self.username and not self.password:
+				print "[ INFO ] %s Credential not configured in server.config file" % target
+				sys.exit(1)
+
 		url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)	
 		response = requests.request("GET", url)
 		tokenData = response.text
@@ -58,15 +65,14 @@ class platformVulnCheckDocker():
                 self.results['header'] = {}
                 self.results['header']['project'] = self.project
                 self.results['header']['project owner'] = owner
-                path1=os.path.dirname(self.reportPath)
-                self.results['header']['repository'] = os.path.basename(path1)
+                self.results['header']['repository'] = ''
 
                 self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
 
                 self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = "source"
+                self.results['header']['source type'] = target
 
                 self.vuln_depe = []
                 self.vuln_found = []
@@ -79,24 +85,14 @@ class platformVulnCheckDocker():
 		self.cri = []
 
 
-	def getsshPackagePlatform(self):
-		s = pxssh.pxssh()
-		s.login(self.remoteIp, self.username, self.password)
-		s.sendline('sudo apt list --installed')
-		s.prompt()
-		data = s.before
-		s.logout()
-		return data	
-
-
 	def lt(self, vulnVer, installedVer):
 		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "eq" "%s"); then echo "true"; fi' % (vulnVer, installedVer))
-		print 'if $(dpkg --compare-versions "%s" "eq" "%s"); then echo true; fi' % (vulnVer, installedVer)
+		#print 'if $(dpkg --compare-versions "%s" "eq" "%s"); then echo true; fi' % (vulnVer, installedVer)
 		if "true" in output:
         		return False
 
 		status, output = commands.getstatusoutput('if $(dpkg --compare-versions "%s" "lt" "%s"); then echo "true"; fi' % (vulnVer, installedVer))
-		print 'if $(dpkg --compare-versions "%s" "gt" "%s"); then echo true; fi' % (vulnVer, installedVer)
+		#print 'if $(dpkg --compare-versions "%s" "gt" "%s"); then echo true; fi' % (vulnVer, installedVer)
     		if "true" in output:
         		return False
 
@@ -104,10 +100,7 @@ class platformVulnCheckDocker():
 		
 
 	def matchVer(self, cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersions, os_name, severity, image):
-		print "======================="
-		print "%s - %s - %s" % (product, versions, mVersions)
             	if self.lt(versions, mVersions):
-			print "--- In --"
 			res = {}
 			res['cve_id'] = cve_id
 			res['product'] = product
@@ -122,9 +115,10 @@ class platformVulnCheckDocker():
 
 			if os_name == "ubuntu":
 				res['usn_id'] = usn_id
-
-			if os_name == "debian":
+			elif os_name == "debian":
 				res['dsa_id'] = usn_id
+			else:
+				res['id'] = usn_id
 
 			res['reference'] = reference
 			res['Installed Version'] = mVersions
@@ -187,7 +181,6 @@ class platformVulnCheckDocker():
 					usn_id = row['usn_id']
 					severity = row['severity']
 					reference = "https://usn.ubuntu.com/%s/" % usn_id
-					print "1 - %s" % cve_id
 					self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersion, os_name, severity, image)
 
 		            if os_name == "debian":
@@ -202,38 +195,85 @@ class platformVulnCheckDocker():
 					dsa_id = row['dsa_id']
 					severity = row['severity']
 					reference = "https://www.debian.org/security/%s/%s" % (cve_id.split("-")[1], dsa_id)
-					print "1 - %s" % cve_id
 					self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, dsa_id, reference, mVersion, os_name, severity, image)
 
-	def getRepoImageJson(Self, authUser, authPass):
-                headers = {
+	def getAZImageJson(self, authUser, authPass, target):
+		if target == "azure":
+			cmd = 'az acr repository list --username %s --password %s --name %s --out json > /tmp/azure' % (authUser, authPass, self.repoUrl)
+			status, output = commands.getstatusoutput(cmd)
+
+			cmd = "cat /tmp/azure"
+			status, output = commands.getstatusoutput(cmd)
+			output = json.loads(output)
+
+			resArray = []
+			for repo in output:
+				res = {}
+				namespace = repo.split("/")[0]
+				image = repo.split("/")[1]
+				imgUrl = repo
+				res['namespace'] = namespace
+				res['image'] = image
+				res['imgUrl'] = imgUrl
+				resArray.append(res)
+				
+			return resArray
+
+	def getAWSImageJson(Self, authUser, authPass, target):
+		if target == "aws":
+			cmd = 'aws ecr describe-repositories'
+			status, output = commands.getstatusoutput(cmd)
+
+			output = json.loads(output)
+			resArray = []
+			for repo in output['repositories']:
+				res = {}
+				repoName = repo['repositoryName']
+				cmd = 'aws ecr describe-images --repository-name %s' % repoName
+				status, output = commands.getstatusoutput(cmd)
+				output = json.loads(output)
+				res['namespace'] = repoName
+				res['tags'] = []
+				for imgDetail in output['imageDetails']:
+				    if 'imageTags' in imgDetail:
+					for tag in imgDetail['imageTags']:
+						tagName = tag
+						res['tags'].append(tagName)
+				resArray.append(res)
+				
+			return resArray
+
+	def getDockerImageJson(Self, authUser, authPass, target):
+		if target == "docker":
+                    headers = {
                         'Content-Type': 'application/json',
-                }
+                    }
 
-                data = '{"username": "%s", "password": "%s"}' % (authUser, authPass)
+                    data = '{"username": "%s", "password": "%s"}' % (authUser, authPass)
 
-                response = requests.post('https://hub.docker.com/v2/users/login/', headers=headers, data=data)
+                    response = requests.post('https://hub.docker.com/v2/users/login/', headers=headers, data=data)
 
-                resp = json.loads(response.text)
-                token = resp['token']
+                    resp = json.loads(response.text)
+                    token = resp['token']
 
-                headers = {'Authorization': 'JWT %s' % token}
-                response = requests.get('https://hub.docker.com/v2/repositories/namespaces/', headers=headers)
-                namespaces = json.loads(response.text)
+                    headers = {'Authorization': 'JWT %s' % token}
+                    response = requests.get('https://hub.docker.com/v2/repositories/namespaces/', headers=headers)
+                    namespaces = json.loads(response.text)
 
 
-                params = (
+                    params = (
                         ('page_size', '10000'),
-                )
+                    )
 
-                resArray = []
-                for namespace in namespaces["namespaces"]:
+                    resArray = []
+                    for namespace in namespaces["namespaces"]:
                         response = requests.get('https://hub.docker.com/v2/repositories/%s/' % namespace, headers=headers, params=params)
                         imgNames = json.loads(response.text)
 
                         for img in imgNames['results']:
                                 res = {}
                                 imgName = img['name']
+				res['namespace'] = namespace
                                 res['image'] = imgName
                                 res['tags'] = []
                                 response = requests.get('https://hub.docker.com/v2/repositories/%s/%s/tags/' % (namespace, imgName), headers=headers, params=params)
@@ -251,21 +291,16 @@ class platformVulnCheckDocker():
                 results = {}
 		self.packageLists = {}
 		
-
                 p = 0
                 client = docker.from_env()
 		images = client.images.list()
-		print images
 
 		for image in images:
 			imageName = re.findall(r'<Image: \'(.*)\'>', str(image))[0]
-			print imageName
 
                         cmd = 'docker run --rm -i -t %s /bin/sh -c "cat /etc/os-release;"' % (imageName)
-			print cmd
                        	status, output = commands.getstatusoutput(cmd)
                         data = output
-			print data
 
                         os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
@@ -292,10 +327,8 @@ class platformVulnCheckDocker():
 
 			if os_name.strip() == "debian" or os_name.strip() == "ubuntu":
                         	cmd = 'docker run --rm -i -t %s /bin/sh -c "dpkg -la > t; cat t"' % (imageName)
-				print cmd
                        		status, output = commands.getstatusoutput(cmd)
                         	data = output
-				print data
 			
                 	        if re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data)):
                            	    pkgDetails = re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data))
@@ -311,28 +344,102 @@ class platformVulnCheckDocker():
 
 		return results
 
-	def getRepoImagePkg(self, authUser, authPass):
+	def getAZImagePkg(self, authUser, authPass, target):
                 results = {}
-		self.packageLists = {}
+                self.packageLists = {}
                 p = 0
                 client = docker.from_env()
-                if authUser:
-                        client.login(username=authUser, password=authPass)
-                        print client.images
 
-                imageJson = self.getRepoImageJson(authUser, authPass)
+                cmd = 'sudo az acr login --username %s --password %s --name %s' % (authUser, authPass, self.repoUrl)
+                status, output = commands.getstatusoutput(cmd)
+                if not re.findall(r'Login Succeeded', str(output)):
+                        print "[ OK ] Check Azure credential, something wrong!"
+                        sys.exit(1)
 
+                imageJson = self.getAZImageJson(authUser, authPass, target)
                 for imgArray in imageJson:
-                        imgName = imgArray['image']
-                        for tag in imgArray['tags']:
-                                imageName = "jaysnpael/%s:%s" % (imgName, tag)
+                        	namespace = imgArray['namespace']
+                                tagName = imgArray['image']
+                                imageName = "%s/%s/%s" % (self.repoUrl, namespace, tagName)
                                 image = client.images.pull("%s" % (imageName))
 
-                                cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release; dpkg -la"' % (imageName)
+                                cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release"' % (imageName)
                                 status, output = commands.getstatusoutput(cmd)
 
                                 data = output
-				print data
+
+                                os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                                os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                                if os_name.strip() == "debian":
+                                        os_type = re.findall(r'^VERSION=\"\d+\s+\((.*)\)\"', str(data), flags=re.MULTILINE)[0]
+                                elif  os_name.strip() == "ubuntu":
+                                        os_type = re.findall(r'PRETTY_NAME=\"(.*)\"', str(data), flags=re.MULTILINE)[0]
+                                else:
+                                        os_type = ''
+
+
+                                imageName = str(imageName)
+                                results[imageName] = {}
+                                results[imageName]['os_name'] = str(os_name.strip())
+                                results[imageName]['os_version'] = str(os_version.replace('"', '').strip())
+                                results[imageName]['os_type'] = str(os_type.strip())
+
+                                if os_name not in self.packageLists:
+                                        os_name = os_name.strip()
+                                        self.packageLists[os_name] = {}
+                                        self.packageLists[os_name]['os_type'] = str(os_type.strip())
+                                        self.packageLists[os_name]['os_version'] = str(os_version.replace('"', '').strip())
+
+
+                                results[imageName]['pkgDetails'] = []
+
+                                if os_name.strip() == "debian" or os_name.strip() == "ubuntu":
+                                    cmd = 'docker run --rm -i -t %s /bin/sh -c "dpkg -la > t; cat t"' % (imageName)
+                                    status, output = commands.getstatusoutput(cmd)
+                                    data = output
+                                    if re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data)):
+                                        pkgDetails = re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data))
+                                        for pkg in pkgDetails:
+                                                res = {}
+                                                package = pkg[0]
+                                                res['package'] = str(package)
+                                                version = pkg[1]
+                                                res['version'] = str(version)
+                                                archPkg = pkg[2]
+                                                res['archPkg'] = str(archPkg)
+                                                results[imageName]['pkgDetails'].append(res)
+
+                                cmd = "docker image rm -f %s" % imageName
+                                status, output = commands.getstatusoutput(cmd)
+
+
+                return results
+
+
+	def getAWSImagePkg(self, authUser, authPass, target):
+                results = {}
+		self.packageLists = {}
+                p = 0
+		client = docker.from_env()
+
+		cmd = 'sudo /usr/local/bin/aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin %s' % self.repoUrl
+		status, output = commands.getstatusoutput(cmd)
+		if not re.findall(r'Login Succeeded', str(output)):
+			print "[ OK ] Check AWS credential, something wrong!"
+			sys.exit(1)
+
+                imageJson = self.getAWSImageJson(authUser, authPass, target)
+                for imgArray in imageJson:
+			namespace = imgArray['namespace']
+                        for tag in imgArray['tags']:
+				tagName = tag
+				imageName = "%s/%s:%s" % (self.repoUrl, namespace, tagName)
+                                image = client.images.pull("%s" % (imageName))
+
+                                cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release"' % (imageName)
+                                status, output = commands.getstatusoutput(cmd)
+
+                                data = output
 
                         	os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         	os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
@@ -360,6 +467,79 @@ class platformVulnCheckDocker():
                                 results[imageName]['pkgDetails'] = []
 
 				if os_name.strip() == "debian" or os_name.strip() == "ubuntu":
+				    cmd = 'docker run --rm -i -t %s /bin/sh -c "dpkg -la > t; cat t"' % (imageName)
+				    status, output = commands.getstatusoutput(cmd)
+				    data = output
+                                    if re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data)):
+                                        pkgDetails = re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data))
+                                        for pkg in pkgDetails:
+                                                res = {}
+                                                package = pkg[0]
+                                                res['package'] = str(package)
+                                                version = pkg[1]
+                                                res['version'] = str(version)
+                                                archPkg = pkg[2]
+                                                res['archPkg'] = str(archPkg)
+                                                results[imageName]['pkgDetails'].append(res)
+
+				cmd = "docker image rm -f %s" % imageName
+				status, output = commands.getstatusoutput(cmd)
+
+
+		return results
+
+
+	def getDockerImagePkg(self, authUser, authPass, target):
+                results = {}
+		self.packageLists = {}
+                p = 0
+                client = docker.from_env()
+                if authUser:
+                        client.login(username=authUser, password=authPass)
+
+                imageJson = self.getDockerImageJson(authUser, authPass, target)
+
+                for imgArray in imageJson:
+			namespace = imgArray['namespace']
+                        imgName = imgArray['image']
+                        for tag in imgArray['tags']:
+                                imageName = "%s/%s:%s" % (namespace, imgName, tag)
+                                image = client.images.pull("%s" % (imageName))
+
+                                cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release"' % (imageName)
+                                status, output = commands.getstatusoutput(cmd)
+
+                                data = output
+
+                        	os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                        	os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                        	if os_name.strip() == "debian":
+                        		os_type = re.findall(r'^VERSION=\"\d+\s+\((.*)\)\"', str(data), flags=re.MULTILINE)[0]
+                        	elif  os_name.strip() == "ubuntu":
+					os_type = re.findall(r'PRETTY_NAME=\"(.*)\"', str(data), flags=re.MULTILINE)[0]
+				else:
+					os_type = ''
+
+
+                                imageName = str(imageName)
+                                results[imageName] = {}
+                                results[imageName]['os_name'] = str(os_name.strip())
+                                results[imageName]['os_version'] = str(os_version.replace('"', '').strip())
+                                results[imageName]['os_type'] = str(os_type.strip())
+
+				if os_name not in self.packageLists:
+					os_name = os_name.strip()
+                                	self.packageLists[os_name] = {}
+                                	self.packageLists[os_name]['os_type'] = str(os_type.strip())
+					self.packageLists[os_name]['os_version'] = str(os_version.replace('"', '').strip())
+
+
+                                results[imageName]['pkgDetails'] = []
+
+				if os_name.strip() == "debian" or os_name.strip() == "ubuntu":
+				    cmd = 'docker run --rm -i -t %s /bin/sh -c "dpkg -la > t; cat t"' % (imageName)
+				    status, output = commands.getstatusoutput(cmd)
+				    data = output
                                     if re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data)):
                                         pkgDetails = re.findall(r'ii\s+(.*?)\s+(.*?)\s+(.*?)\s+', str(data))
                                         for pkg in pkgDetails:
@@ -385,8 +565,14 @@ class platformVulnCheckDocker():
 		if self.target.lower() == "local":
 			installPackageLists = self.getImagePkg()
 		
-		if self.target.lower() == "repository":
-			installPackageLists = self.getRepoImagePkg(self.username, self.password)
+		if self.target.lower() == "docker":
+			installPackageLists = self.getDockerImagePkg(self.username, self.password, self.target)
+
+		if self.target.lower() == "aws":
+			installPackageLists = self.getAWSImagePkg(self.username, self.password, self.target)
+
+		if self.target.lower() == "azure":
+			installPackageLists = self.getAZImagePkg(self.username, self.password, self.target)
 
 			
 		return installPackageLists
@@ -480,6 +666,29 @@ class platformVulnCheckDocker():
 		response = requests.request("POST", url, headers=headers, data=payload)
 		self.responseData = response.json()
 
+	def query_yes_no(self, question, default="yes"):
+                valid = {"yes": True, "y": True, "ye": True,
+                        "no": False, "n": False}
+                if default is None:
+                        prompt = " [y/n] "
+                elif default == "yes":
+                        prompt = " [Y/n] "
+                elif default == "no":
+                        prompt = " [y/N] "
+                else:
+                        raise ValueError("invalid default answer: '%s'" % default)
+
+                while True:
+                        sys.stdout.write(question + prompt)
+                        choice = raw_input().lower()
+                        if default is not None and choice == '':
+                                return valid[default]
+                        elif choice in valid:
+                                return valid[choice]
+                        else:
+                                sys.stdout.write("Please respond with 'yes' or 'no' "
+                                        "(or 'y' or 'n').\n")	
+
 		
 
 if __name__ == "__main__":
@@ -487,13 +696,11 @@ if __name__ == "__main__":
 
 	parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
 	parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-	parser.add_argument('-t', '--target', type=str,  help='Enter target type local/repository', required=True, default='local')
+	parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws', required=True, default='local')
 	parser.add_argument('-repo', '--reponame', type=str,  help='Enter repository name', default='*')
 	parser.add_argument('-image', '--imagename', type=str,  help='Enter Image name', default='*')
 	parser.add_argument('-tags', '--imagetags', type=str,  help='Enter Image tags', default='*')
 	parser.add_argument('-o', '--owner', type=str,  help='Enter project owner')
-	parser.add_argument('-u', '--username', type=str,  help='Enter remote machine username')
-	parser.add_argument('-p', '--password', type=str,  help='Enter remote machine password')
 	
 
 	parser.add_argument('-v', '--version', action='version',
@@ -506,13 +713,67 @@ if __name__ == "__main__":
 	else:
 		owner = results.owner
 
-	if results.target.lower() == "repository":
-		if not results.username or not results.password:
-			print "[ INFO ] Enter remote machine credential with -u and -p argument"
-			sys.exit(1)
+	data = """
+                     GNU GENERAL PUBLIC LICENSE
+                       Version 3, 29 June 2007
 
+ Copyright (C) 2007 Free Software Foundation, Inc. <https://fsf.org/>
+ Everyone is permitted to copy and distribute verbatim copies
+ of this license document, but changing it is not allowed.
 
-	res = platformVulnCheckDocker(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner, results.username, results.password)
-	res.scanPlatformPackage()
+                            Preamble
+
+  The GNU General Public License is a free, copyleft license for
+software and other kinds of works.
+
+  The licenses for most software and other practical works are designed
+to take away your freedom to share and change the works.  By contrast,
+the GNU General Public License is intended to guarantee your freedom to
+share and change all versions of a program--to make sure it remains free
+software for all its users.  We, the Free Software Foundation, use the
+GNU General Public License for most of our software; it applies also to
+any other work released this way by its authors.  You can apply it to
+your programs, too.
+
+  When we speak of free software, we are referring to freedom, not
+price.  Our General Public Licenses are designed to make sure that you
+have the freedom to distribute copies of free software (and charge for
+them if you wish), that you receive source code or can get it if you
+want it, that you can change the software or use pieces of it in new
+free programs, and that you know you can do these things.
+
+  To protect your rights, we need to prevent others from denying you
+these rights or asking you to surrender the rights.  Therefore, you have
+certain responsibilities if you distribute copies of the software, or if
+you modify it: responsibilities to respect the freedom of others.
+
+  For example, if you distribute copies of such a program, whether
+gratis or for a fee, you must pass on to the recipients the same
+freedoms that you received.  You must make sure that they, too, receive
+or can get the source code.  And you must show them these terms so they
+know their rights.
+
+  Developers that use the GNU GPL protect your rights with two steps:
+(1) assert copyright on the software, and (2) offer you this License
+giving you legal permission to copy, distribute and/or modify it.
+
+  For the developers' and authors' protection, the GPL clearly explains
+that there is no warranty for this free software.  For both users' and
+authors' sake, the GPL requires that modified versions be marked as
+changed, so that their problems will not be attributed erroneously to
+authors of previous versions.
+
+  Some devices are designed to deny users access to install or run
+modified versions of the software inside them, although the m
+
+Do you want to accept ?
+        """
+
+	if res.query_yes_no(data):
+		res = platformVulnCheckDocker(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner)
+		res.scanPlatformPackage()
+	else:
+		sys.exit(1)
+
 
 
