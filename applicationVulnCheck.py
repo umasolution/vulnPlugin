@@ -26,21 +26,19 @@ sys.setrecursionlimit(10000)
 sys.setdefaultencoding("utf-8")
 
 
-class drupalPluginVulnerabilities():
-	def __init__(self, reportPath, project, targetFolder, owner, stype):
+class applicationVulnerabilities():
+	def __init__(self, reportPath, project, targetFolder, owner, username, password, remoteIp):
 		self.reportPath = reportPath
                 self.sourcefolder = targetFolder
+                self.target = targetFolder
                 self.project = project
-		self.scan_type = stype.lower()
+                self.username = username
+                self.password = password
+                self.remoteIp = remoteIp
 
                 if not path.exists("server.config"):
                         print "[ INFO ] server configuration json file not found in current directory"
                         sys.exit(1)
-
-		if not os.path.isdir('%s/modules' % self.sourcefolder):
-			print "[ INFO ] Modules directory not found in target path, please provide proper drupal path"	
-                        sys.exit(1)
-
 
                 with open('server.config') as f:
                         configData = json.load(f)
@@ -73,60 +71,16 @@ class drupalPluginVulnerabilities():
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
 
                 self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = "source"
+                self.results['header']['source type'] = targetFolder
 
                 self.vuln_depe = []
                 self.vuln_found = []
                 self.testedWith = []
                 self.dependanciesCount = []
-
-
-	def getDrupalWebToken(self):
-		headers = {
-    			'Connection': 'keep-alive',
-    			'Cache-Control': 'max-age=0',
-    			'Upgrade-Insecure-Requests': '1',
-    			'Origin': 'http://192.168.0.21',
-    			'Content-Type': 'application/x-www-form-urlencoded',
-    			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
-    			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    			'Referer': 'http://192.168.0.21/drupal/user/login',
-    			'Accept-Language': 'en-US,en;q=0.9',
-		}
-
-		data = {
-  			'name': 'admin',
-  			'pass': '123456',
-  			'form_build_id': 'form-W2kjoTgKWbo__WiKXkDQa27TYM6zR7X7Gc4129JJmc1',
-  			'form_id': 'user_login_form',
-  			'op': 'Log in'
-		}
-
-		response = requests.post('http://192.168.0.21/drupal/user/login', headers=headers, data=data, verify=False)
-		resHeader = response.headers
-		resToken = resHeader['Set-Cookie'].split(';')[0]
-		return resToken
-
-	def getWebModulePage(self):
-		resToken = self.getDrupalWebToken()
-		print resToken
-
-		resTokenKey = resToken.split('=')[0]
-		resTokenVal = resToken.split('=')[1]
-		cookies = {}
-		cookies[resTokenKey] = resTokenVal
-
-		headers = {
-    			'Connection': 'keep-alive',
-    			'Cache-Control': 'max-age=0',
-    			'Upgrade-Insecure-Requests': '1',
-    			'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/81.0.4044.138 Safari/537.36',
-    			'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-    			'Referer': 'http://192.168.0.21/drupal/admin/modules',
-    			'Accept-Language': 'en-US,en;q=0.9',
-		}
-		response = requests.get('http://192.168.0.21/drupal/admin/modules', headers=headers, cookies=cookies, verify=False)
-		return response.text
+		self.med = []
+                self.low = []
+                self.hig = []
+                self.cri = []
 
 
 	def gtEq(self, vers1, mVers):
@@ -432,9 +386,7 @@ class drupalPluginVulnerabilities():
 
 	def getInstallPkgList(self):
 		resultsPackage = []
-
 		resJson = self.getConfig()
-		print resJson
 		self.results['applications'] = {}
 		for app in resJson["packageRegex"]:
 			self.results['applications'][app] = []
@@ -494,7 +446,6 @@ class drupalPluginVulnerabilities():
 		self.critical = []
 		packageLists = self.getInstallPkgList()
 		print packageLists
-		print "=============="
 		print self.results
 		print "[ OK ] Preparing..."
 		print self.results
@@ -585,11 +536,13 @@ class drupalPluginVulnerabilities():
 if __name__ == "__main__":
         parser = argparse.ArgumentParser()
 
-        parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
+	parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
         parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-        parser.add_argument('-t', '--target', type=str,  help='Enter target source folder', required=True)
-        parser.add_argument('-o', '--owner', type=str,  help='Enter project owner', required=True)
-        parser.add_argument('-p', '--stype', type=str,  help='Enter scan type source/container', required=True)
+        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/remote', required=True, default='local')
+        parser.add_argument('-ip', '--targetIp', type=str,  help='Enter target machine IP address')
+        parser.add_argument('-o', '--owner', type=str,  help='Enter project owner')
+        parser.add_argument('-u', '--username', type=str,  help='Enter remote machine username')
+        parser.add_argument('-p', '--password', type=str,  help='Enter remote machine password')
 
         parser.add_argument('-v', '--version', action='version',
                     version='%(prog)s 1.0')
@@ -656,9 +609,10 @@ modified versions of the software inside them, although the m
 
 Do you want to accept ?
         """
-        res = drupalPluginVulnerabilities(results.reportPath, results.projectname, results.target, owner, results.stype)
+        res = applicationVulnerabilities(results.reportPath, results.projectname, results.target, owner, results.username, results.password, results.targetIp)
 
         if res.query_yes_no(data):
                 res.scanPackage()
         else:
                 sys.exit(1)
+
