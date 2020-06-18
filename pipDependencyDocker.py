@@ -1,10 +1,10 @@
 # Developed by : Jays Patel (cyberthreatinfo.ca)
-# This script is use to find the Drupal Plugin vulnerabilities.
+# This script is use to find the python PIP packages vulnerabilities from linux machine and python source project.
 
 import docker
 import time
-import os
 import glob2
+import os
 from os import path
 import random
 import semantic_version
@@ -22,17 +22,15 @@ from pexpect import pxssh
 import argparse
 import sqlite3
 from datetime import datetime
-reload(sys)
-sys.setrecursionlimit(10000)
-sys.setdefaultencoding("utf-8")
 
 
-class applicationVulnerabilities():
+class getPipVulnerabilities():
 	def __init__(self, reportPath, project, target, reponame, imagename, imagetags, owner):
+
 		self.reportPath = reportPath
                 self.target = target
                 self.project = project
-		self.reponame = reponame
+                self.reponame = reponame
                 self.imagename = imagename
                 self.imagetags = imagetags
 
@@ -49,15 +47,6 @@ class applicationVulnerabilities():
                 self.port = configData['port']
                 self.protocol = configData['protocol']
 
-		if target != "local":
-                        self.username = configData[target]['uid']
-                        self.password = configData[target]['secret']
-                        self.repoUrl = configData[target]['url']
-                        if not self.username and not self.password:
-                                print "[ INFO ] %s Credential not configured in server.config file" % target
-                                sys.exit(1)
-
-
                 url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
                 response = requests.request("GET", url)
                 tokenData = response.text
@@ -70,27 +59,34 @@ class applicationVulnerabilities():
 
 
                 self.results = {}
-                self.results['header'] = {}
 		self.results['images'] = {}
+                self.results['header'] = {}
                 self.results['header']['project'] = self.project
                 self.results['header']['project owner'] = owner
-                self.results['header']['repository'] = ''
+                path1=os.path.dirname(self.reportPath)
+                self.results['header']['repository'] = os.path.basename(path1)
 
                 self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
 
                 self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = target
+                self.results['header']['source type'] = "source"
 
                 self.vuln_depe = []
                 self.vuln_found = []
                 self.testedWith = []
                 self.dependanciesCount = []
-		self.med = []
-                self.hig = []
-                self.low = []
-		self.critical = []
+
+
+	def getsshPackagePip(self, hostname, username, password):
+		s = pxssh.pxssh()
+		s.login(hostname, username, password)
+		s.sendline('pip freeze')
+		s.prompt()
+		data = s.before
+		s.logout()
+		return data	
 
 
 	def gtEq(self, vers1, mVers):
@@ -125,8 +121,17 @@ class applicationVulnerabilities():
                         return False
 
 
-	def matchVer(self, cve_id, severity, summary, versions, product, baseScore, accessVector, confidentialityImpact, integrityImpact, availabilityImpact, accessComplexity, authentication, reference, pub_date, mVers, image):
-		mVer = mVers
+	def matchVer(self, product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, filename, image):
+		"""
+		if self.scan_type != "package":
+			mVer = self.checkSemantic(product, mVers)
+		else:
+			mVer = mVers
+		"""
+		mVer = self.checkSemantic(product, mVers.strip())
+
+		print "Match %s - %s - %s" % (mVer, product, versions)
+
                 if not severity:
                         severity = "Medium"
                 if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -135,8 +140,6 @@ class applicationVulnerabilities():
                         severity = "High"
                 elif severity.lower() == "low":
                         severity = "Low"
-		elif severity.lower() == "critical":
-			severity = "Critical"
 
                 for vers in versions.split(","):
                     if re.findall(r'\[.*:.*\]', str(vers)):
@@ -148,20 +151,17 @@ class applicationVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
+                                res['product'] = str(product)
+                                res['vendor'] = str(vendor)
+                                res['severity'] = str(severity)
                                 res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Vulnerable Version'] = str(mVers)
+                                res['vectorString'] = str(vectorString)
+                                res['vuln_name'] = str(vuln_name)
+                                res['patch'] = str(patch)
+                                res['recommendation'] = str(recommendation)
+                                res['reference'] = str(reference)
+                                res['pub_date'] = str(pub_date)
+                                res['Versions'] = str(mVers)
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -172,9 +172,10 @@ class applicationVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
-					if severity.lower() == "critical":
-						self.critical.append("Critical")
 
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
 
 		    elif re.findall(r'\(.*:.*\]', str(vers)):
                         vers1 = re.findall(r'\((.*):', str(vers))[0]
@@ -185,20 +186,17 @@ class applicationVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
+                                res['product'] = str(product)
+                                res['vendor'] = str(vendor)
+                                res['severity'] = str(severity)
                                 res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Vulnerable Version'] = str(mVers)
+                                res['vectorString'] = str(vectorString)
+                                res['vuln_name'] = str(vuln_name)
+                                res['patch'] = str(patch)
+                                res['recommendation'] = str(recommendation)
+                                res['reference'] = str(reference)
+                                res['pub_date'] = str(pub_date)
+                                res['Versions'] = str(mVer)
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -209,9 +207,10 @@ class applicationVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
-					if severity.lower() == "critical":
-						self.critical.append("Critical")
 
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
 
 		    elif re.findall(r'\[.*:.*\)', str(vers)):
                         vers1 = re.findall(r'\[(.*):', str(vers))[0]
@@ -222,20 +221,17 @@ class applicationVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
+                                res['product'] = str(product)
+                                res['vendor'] = str(vendor)
+                                res['severity'] = str(severity)
                                 res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Vulnerable Version'] = str(mVers)
+                                res['vectorString'] = str(vectorString)
+                                res['vuln_name'] = str(vuln_name)
+                                res['patch'] = str(patch)
+                                res['recommendation'] = str(recommendation)
+                                res['reference'] = str(reference)
+                                res['pub_date'] = str(pub_date)
+                                res['Versions'] = str(mVer)
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -246,9 +242,10 @@ class applicationVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
-					if severity.lower() == "critical":
-						self.critical.append("Critical")
 
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
 
 		    elif re.findall(r'\(.*:.*\)', str(vers)):
                         vers1 = re.findall(r'\((.*):', str(vers))[0]
@@ -259,20 +256,17 @@ class applicationVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
+                                res['product'] = str(product)
+                                res['vendor'] = str(vendor)
+                                res['severity'] = str(severity)
                                 res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Vulnerable Version'] = str(mVers)
+                                res['vectorString'] = str(vectorString)
+                                res['vuln_name'] = str(vuln_name)
+                                res['patch'] = str(patch)
+                                res['recommendation'] = str(recommendation)
+                                res['reference'] = str(reference)
+                                res['pub_date'] = str(pub_date)
+                                res['Versions'] = str(mVer)
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -283,9 +277,10 @@ class applicationVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
-					if severity.lower() == "critical":
-						self.critical.append("Critical")
 
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
 
 		    elif re.findall(r'\(.*:.*\)', str(vers)):
                         vers1 = re.findall(r'\((.*):', str(vers))[0]
@@ -296,20 +291,17 @@ class applicationVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
+                                res['product'] = str(product)
+                                res['vendor'] = str(vendor)
+                                res['severity'] = str(severity)
                                 res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Vulnerable Version'] = str(mVers)
+                                res['vectorString'] = str(vectorString)
+                                res['vuln_name'] = str(vuln_name)
+                                res['patch'] = str(patch)
+                                res['recommendation'] = str(recommendation)
+                                res['reference'] = str(reference)
+                                res['pub_date'] = str(pub_date)
+                                res['Versions'] = str(mVer)
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -320,9 +312,10 @@ class applicationVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
-					if severity.lower() == "critical":
-						self.critical.append("Critical")
 
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
 
 		    else:
                         vers1 = str(vers)
@@ -331,20 +324,17 @@ class applicationVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
+                                res['product'] = str(product)
+                                res['vendor'] = str(vendor)
+                                res['severity'] = str(severity)
                                 res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Vulnerable Version'] = str(mVers)
+                                res['vectorString'] = str(vectorString)
+                                res['vuln_name'] = str(vuln_name)
+                                res['patch'] = str(patch)
+                                res['recommendation'] = str(recommendation)
+                                res['reference'] = str(reference)
+                                res['pub_date'] = str(pub_date)
+                                res['Versions'] = str(mVer)
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -355,98 +345,203 @@ class applicationVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
-					if severity.lower() == "critical":
-						self.critical.append("Critical")
+
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
 
 
-	def getVulnData(self, productName, mVers, image):
-		for res in self.responseData['vulnerabilities']:
+	def getVulnData(self, productName, mVers, filename, image):
+		for res in self.responseData['results'][productName]:
+		    if 'product' in res:
+                        product = res['product']
+			vendor = res['vendor']
 			cve_id = res['cve_id']
-			summary = res['summary']
-			severity = res['severity']
-			versions = res['versions']
-			product = res['product']
-			baseScore = res['baseScore']
-			accessVector = res['accessVector']
-			confidentialityImpact = res['confidentialityImpact']
-			integrityImpact = res['integrityImpact']
-			availabilityImpact = res['availabilityImpact']
-			accessComplexity = res['accessComplexity']
-			authentication = res['authentication']
 			reference = res['reference']
+			versions = res['versions']
+			vuln_name = res['vuln_name']
+			vectorString = res['vectorString']
+			baseScore = res['baseScore']
+			recommendation = res['recommendation']
+			patch = res['vulnerable version']
 			pub_date = res['pub_date']
+			severity = res['severity']
+	
 
-			self.matchVer(cve_id, severity, summary, versions, product, baseScore, accessVector, confidentialityImpact, integrityImpact, availabilityImpact, accessComplexity, authentication, reference, pub_date, mVers, image)
+			self.matchVer(product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, filename, image)
 
-	def getConfig(self):
-            try:
-                url = "%s://%s:%s/api/getConfig/all" % (self.protocol, self.server, self.port)
-                headers = {
-                        'Authorization': 'Basic QWRtaW5pc3RyYXRvcjpWZXJzYUAxMjM=',
-                        'Content-Type': 'application/json'
-                }
 
-                response = requests.request("GET", url, headers=headers)
-                responseData = response.json()
-		return responseData
-            except:
-                print "[ OK ] Database sync error! Check internet connectivity"
-                sys.exit(1)
+	def getInstallPkgList(self, location, image):
+		print "[ OK ] Getting Installed Python Library Details From Target"
+
+		if 'files' not in self.resultsPkg['images'][image]:
+			self.resultsPkg['images'][image]['files'] = {}
+
+		if 'installed' not in self.resultsPkg['images'][image]['files']:
+			self.resultsPkg['images'][image]['files']['installed'] = {}
+			self.resultsPkg['images'][image]['files']['installed']['packages'] = []
+
+		status, output = commands.getstatusoutput("pip freeze")
+		cmd = 'docker run --rm -i -t %s /bin/sh -c "pip freeze > t; cat t"' % (image)
+		status, output = commands.getstatusoutput(cmd)
+
+		for strLine in output.split("\n"):
+		    if re.findall(r'(.*)==(.*)', str(strLine)):
+			details = re.findall(r'(.*)==(.*)', str(strLine))[0]
+			product = details[0]
+			versions = details[1]
+			res = {}
+			res['product'] = product.strip()
+			res['versions'] = versions.replace(" ", "")
+			self.resultsPkg['images'][image]['files']['installed']['packages'].append(res)
+			self.resultsPackage.append(product.strip())
+
+		for file in glob2.glob('%s/**/*requirement*.txt' % (location), recursive=True):
+			file = os.path.abspath(file)
+			filename = os.path.basename(file)
+
+			if filename not in self.resultsPkg['images'][image]['files']:
+				self.resultsPkg['images'][image]['files'][filename] = {}
+				self.resultsPkg['images'][image]['files'][filename]['packages'] = []
+				
+
+			fileData = open(file)
+
+			for lineFile in fileData.readlines():
+				for strLine in lineFile.split(";"):
+					if re.findall(r'(.*)(>=|==)(.*)', str(strLine)):
+						details = re.findall(r'(.*)(>=|==)(.*)', str(strLine))[0]
+						product = details[0]
+						versions = "%s%s" % (details[1].replace("'",""), details[2].replace("'", ""))
+						res = {}
+						res['product'] = product.strip()
+						res['versions'] = versions.replace(" ", "")
+						self.resultsPkg['images'][image]['files'][filename]['packages'].append(res)
+						self.resultsPackage.append(product.strip())
+						print "%s - %s" % (product.strip(), versions.replace(" ", ""))
+
+
+	def maxValue(self, mVersions):
+                ver1 = '0.0'
+                for ver in mVersions:
+                        if parse_version(ver) > parse_version(ver1):
+                                ver1 = ver
+
+                return ver1
+
+	def getpipVersions(self, product):
+		vers = []
+		url = "https://pypi.python.org/pypi/%s/json" % product
+		response = requests.get(url, timeout=10)
+		if response.status_code == 200:
+			data = response.text
+			data = json.loads(data)
+			for ver in data['releases']:
+				vers.append(str(ver))
+
+		return vers
+
+	def checkSemantic(self, product, versions):
+		res = []
+		spec = semantic_version.Spec(versions)
+		productVersions = self.getpipVersions(product)
+
+		for pVersion in productVersions:
+		    try:
+			if re.findall(r'rc|b\d', str(pVersion)):
+				pVersion = re.sub(r'rc\d|b\d', '', str(pVersion))
+			elif re.findall(r'^\d$', str(pVersion)):
+				pVersion = "%s.0" % re.findall(r'^\d$', str(pVersion))[0]
+			else:
+				pVersion = pVersion
+
+			sVersion = semantic_version.Version(pVersion)
+			if sVersion in spec:
+				res.append(pVersion)
+		    except:
+			pass
+
+		return self.maxValue(res)
+		
+
+	def getpipDetails(self, product):
+		url = "https://pypi.python.org/pypi/%s/json" % product
+		response = requests.get(url, timeout=10)
+		if response.status_code == 200:
+			data = response.text
+			data = json.loads(data)
+			current_version = data['info']['version']
+			package_url = data['info']['package_url']
+		else:
+			current_version = ""
+			package_url = ""
+
+		self.results['vulnerabilities'][product]['latest version'] = current_version
+		self.results['vulnerabilities'][product]['package url'] = package_url
+
+	def getUnique(self, lists):
+		unique_list = [] 
+		for x in lists:
+			if x not in unique_list:
+				unique_list.append(x)
+		return unique_list
+
 
 	def getAWSImage(self, authUser, authPass, target):
-		client = docker.from_env()
-		cmd = 'sudo /usr/local/bin/aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin %s' % self.repoUrl
-		tatus, output = commands.getstatusoutput(cmd)
+                client = docker.from_env()
+                cmd = 'sudo /usr/local/bin/aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin %s' % self.repoUrl
+                tatus, output = commands.getstatusoutput(cmd)
                 if not re.findall(r'Login Succeeded', str(output)):
                         print "[ OK ] Check AWS credential, something wrong!"
                         sys.exit(1)
 
-		cmd = 'aws ecr describe-repositories'
-		status, output = commands.getstatusoutput(cmd)
-		output = json.loads(output)
-		resArray = []
+                cmd = 'aws ecr describe-repositories'
+                status, output = commands.getstatusoutput(cmd)
+                output = json.loads(output)
+                resArray = []
                 for repo in output['repositories']:
-                	repoName = repo['repositoryName']
+                        repoName = repo['repositoryName']
                         cmd = 'aws ecr describe-images --repository-name %s' % repoName
                         status, output = commands.getstatusoutput(cmd)
                         output = json.loads(output)
                         for imgDetail in output['imageDetails']:
-                        	if 'imageTags' in imgDetail:
-                                	for tag in imgDetail['imageTags']:
+                                if 'imageTags' in imgDetail:
+                                        for tag in imgDetail['imageTags']:
                                                 tagName = tag
-						imageName = "%s/%s:%s" % (self.repoUrl, repoName, tagName)
-                                		resArray.append(imageName)
+                                                imageName = "%s/%s:%s" % (self.repoUrl, repoName, tagName)
+                                                resArray.append(imageName)
 
-         	return resArray
+                return resArray
 
 	def getAZImage(self, authUser, authPass, target):
-		client = docker.from_env()
-		cmd = 'sudo az acr login --username %s --password %s --name %s' % (authUser, authPass, self.repoUrl)
+                client = docker.from_env()
+                cmd = 'sudo az acr login --username %s --password %s --name %s' % (authUser, authPass, self.repoUrl)
                 status, output = commands.getstatusoutput(cmd)
                 if not re.findall(r'Login Succeeded', str(output)):
                         print "[ OK ] Check Azure credential, something wrong!"
                         sys.exit(1)
-		
-		cmd = 'az acr repository list --username %s --password %s --name %s --out json > /tmp/azure' % (authUser, authPass, self.repoUrl)
-		status, output = commands.getstatusoutput(cmd)
-	
-		cmd = "cat /tmp/azure"
+
+                cmd = 'az acr repository list --username %s --password %s --name %s --out json > /tmp/azure' % (authUser, authPass, self.repoUrl)
+                status, output = commands.getstatusoutput(cmd)
+
+                cmd = "cat /tmp/azure"
                 status, output = commands.getstatusoutput(cmd)
                 output = json.loads(output)
 
-		resArray = []
+                resArray = []
                 for repo in output:
-                	namespace = repo.split("/")[0]
+                        namespace = repo.split("/")[0]
                         image = repo.split("/")[1]
                         imgUrl = repo
-			imageName = "%s/%s/%s" % (self.repoUrl, namespace, image)
-			resArray.append(imageName)
-                        
-		return resArray
+                        imageName = "%s/%s/%s" % (self.repoUrl, namespace, image)
+                        resArray.append(imageName)
 
+                return resArray
+
+	
 	def getDockerHubImage(self, authUser, authPass, target):
-		headers = {
-                	'Content-Type': 'application/json',
+                headers = {
+                        'Content-Type': 'application/json',
                 }
 
                 data = '{"username": "%s", "password": "%s"}' % (authUser, authPass)
@@ -462,12 +557,12 @@ class applicationVulnerabilities():
 
 
                 params = (
-                	('page_size', '10000'),
+                        ('page_size', '10000'),
                 )
 
-               	resArray = []
+                resArray = []
                 for namespace in namespaces["namespaces"]:
-                	response = requests.get('https://hub.docker.com/v2/repositories/%s/' % namespace, headers=headers, params=params)
+                        response = requests.get('https://hub.docker.com/v2/repositories/%s/' % namespace, headers=headers, params=params)
                         imgNames = json.loads(response.text)
                         for img in imgNames['results']:
                                 imgName = img['name']
@@ -476,36 +571,39 @@ class applicationVulnerabilities():
 
                                 for tag in tagNames['results']:
                                         tagsName = tag['name']
-					imageName = "%s/%s:%s" % (namespace, imgName, tagsName)
-                                	resArray.append(imageName)	
+                                        imageName = "%s/%s:%s" % (namespace, imgName, tagsName)
+                                        resArray.append(imageName)
 
-		return resArray
+                return resArray
+
 
 	def getLocalImage(self):
-		imagesArray = []
+                imagesArray = []
                 client = docker.from_env()
                 images = client.images.list()
                 print images
                 for image in images:
-			imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
-			print imageName
-			imgs = re.findall(r'\'(.*?)\'', str(imageName))
-			for img in imgs:
-				imagesArray.append(img)
+                        imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
+                        print imageName
+                        imgs = re.findall(r'\'(.*?)\'', str(imageName))
+                        for img in imgs:
+                                imagesArray.append(img)
 
-		return imagesArray
+                return imagesArray
 
 
 	def getimagepkgVer(self, images):
-		resJson = self.getConfig()
-		print images
+                self.resultsPkg = {}
+                self.resultsPkg['images'] = {}
+		self.resultsPackage = []
+
                 for image in images:
                         imageName = image
-			if "/" in imageName:
-				container_name = imageName.split("/")[1]
-				container_name = container_name.replace(":", "_")
-			else:
-				container_name = imageName.replace(":", "_")
+                        if "/" in imageName:
+                                container_name = imageName.split("/")[1]
+                                container_name = container_name.replace(":", "_")
+                        else:
+                                container_name = imageName.replace(":", "_")
 
                         cmd = 'docker run --name %s -it -d %s' % (container_name, imageName)
                         print cmd
@@ -525,24 +623,24 @@ class applicationVulnerabilities():
                         data = output
                         print data
 
-			cmd = 'mkdir /tmp/%s' % container_name
+                        cmd = 'mkdir /tmp/%s' % container_name
                         print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
                         print data
 
-			cmd = 'sudo tar -xf /tmp/%s.tar -C /tmp/%s/' % (container_name, container_name)
+                        cmd = 'sudo tar -xf /tmp/%s.tar -C /tmp/%s/' % (container_name, container_name)
                         print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
                         print data
 
-			cmd = 'cat /tmp/%s/etc/os-release' % container_name
+                        cmd = 'cat /tmp/%s/etc/os-release' % container_name
                         print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
                         print data
-			
+
                         os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         if os_name.strip() == "debian":
@@ -553,105 +651,64 @@ class applicationVulnerabilities():
                                 os_type = ''
 
                         imageName = str(imageName)
-                        self.results['images'][imageName] = {}
-                        self.results['images'][imageName]['os_name'] = str(os_name.strip())
-                        self.results['images'][imageName]['os_version'] = str(os_version.replace('"', '').strip())
-                        self.results['images'][imageName]['os_type'] = str(os_type.strip())
-			
-			self.getImageDetails(resJson, imageName, container_name)
+                        self.resultsPkg['images'][imageName] = {}
+                        self.resultsPkg['images'][imageName]['os_name'] = str(os_name.strip())
+                        self.resultsPkg['images'][imageName]['os_version'] = str(os_version.replace('"', '').strip())
+                        self.resultsPkg['images'][imageName]['os_type'] = str(os_type.strip())
 
-			cmd = "rm -rf /tmp/%s*" % container_name
+                        self.getInstallPkgList("/tmp/%s" % container_name, imageName)
+
+                        cmd = "rm -rf /tmp/%s*" % container_name
                         print cmd
-                        #status, output = commands.getstatusoutput(cmd)
-                        #data = output
-                        #print data
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                return self.resultsPkg
 
 
-	def getImageDetails(self, resJson, imageName, container_name):
-		self.results['images'][imageName]['applications'] = {}
-		for app in resJson["packageRegex"]:
-			self.results['images'][imageName]['applications'][str(app)] = []
-			for app1 in resJson["packageRegex"][app]:
-				location = app1["location"]
-				file_regex = app1["file_regex"]
-				content_version_regex = app1["content_version_regex"]
-				content_product_regex = app1["content_product_regex"]
-				print location
-				print file_regex
-
-				location = location.encode('utf-8')
-				file_regex = file_regex.encode('utf-8')
-				
-		    		for filename in glob2.glob('/tmp/%s/%s/**/%s' % (container_name, location, file_regex), recursive=True):
-					res = {}
-       					product = ''
-        				version = ''
-        				fData = open(filename, "r").read()
-        				if re.findall(r'%s' % content_version_regex, str(fData)):
-                				version = re.findall(r'%s' % content_version_regex, str(fData))[0]
-        				if re.findall(r'%s' % content_product_regex, str(fData)):
-                				product = re.findall(r'%s' % content_product_regex, str(fData))[0]
-
-        				if product and version:
-                				print "%s - %s - %s" % (product, version, filename)
-						res['product'] = product
-						res['version'] = version
-						res['filename'] = filename
-						self.results['images'][imageName]['applications'][str(app)].append(res)
-
-
-
-	def maxValue(self, mVersions):
-                ver1 = '0.0'
-                for ver in mVersions:
-                        if parse_version(ver) > parse_version(ver1):
-                                ver1 = ver
-
-                return ver1
-
-
-	def getUnique(self, lists):
-		unique_list = [] 
-		for x in lists:
-			if x not in unique_list:
-				unique_list.append(x)
-		return unique_list
 
 	def genPkgVer(self):
-		if self.target.lower() == "local":
+                if self.target.lower() == "local":
                         imagesArray = self.getLocalImage()
-			self.getimagepkgVer(imagesArray)
+                        output = self.getimagepkgVer(imagesArray)
 
                 if self.target.lower() == "docker":
                         imagesArray = self.getDockerHubImage(self.username, self.password, self.target)
-			self.getimagepkgVer(imagesArray)
+                        output = self.getimagepkgVer(imagesArray)
 
                 if self.target.lower() == "aws":
                         imagesArray = self.getAWSImage(self.username, self.password, self.target)
-			self.getimagepkgVer(imagesArray)
+                        output = self.getimagepkgVer(imagesArray)
 
                 if self.target.lower() == "azure":
                         imagesArray = self.getAZImage(self.username, self.password, self.target)
-			self.getimagepkgVer(imagesArray)
+                        output = self.getimagepkgVer(imagesArray)
 
+                return output
 
-	def scanPackage(self):
+	def scanPipPackage(self):
+		self.med = []
+                self.hig = []
+                self.low = []
+		output = self.genPkgVer()
+		print "[ OK ] Snyc Data...."
+		self.syncData(self.resultsPackage)
 		print "[ OK ] Preparing..."
-		self.genPkgVer()
-		print self.results
-		print "=============="
-		print "[ OK ] Scan started"
 
-		for image in self.results['images']:
-			self.results['images'][image]['Issues'] = {}
-			for app in self.results['images'][image]['applications']:
-		    		for app1 in self.results['images'][image]['applications'][app]:
-					product = app1['product']
-					versions = app1['version']
-					print "[ OK ] Snyc Data...."
-					self.syncData(product)
-					print "%s - %s - %s" % (product, versions, image)
-					self.getVulnData(product, versions, image)
+		print "[ OK ] Scan started"
+		for image in output['images']:
+			if image not in self.results['images']:
+				self.results['images'][image] = {}
+				self.results['images'][image]['Issues'] = {}
+
+			if 'files' in output['images'][image]:
+				for filename in output['images'][image]['files']:
+					for result in output['images'][image]['files'][filename]['packages']:
+						product = result['product']
+						versions = result['versions']
+						print "%s - %s" % (product, versions)
+						self.getVulnData(product, versions, filename, image)
 
 		print "[ OK ] Scan completed"
 	
@@ -661,7 +718,6 @@ class applicationVulnerabilities():
                 self.results['header']['severity']['low'] = len(self.low)
                 self.results['header']['severity']['high'] = len(self.hig)
                 self.results['header']['severity']['medium'] = len(self.med)
-                self.results['header']['severity']['critical'] = len(self.critical)
                 self.results['header']['vulnerabilities found'] = len(self.vuln_found)
                 self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
 
@@ -671,7 +727,7 @@ class applicationVulnerabilities():
                 print "[ OK ] Vulnerabilities Report ready - %s/%s.json" % (self.report_path, self.report_name)
 
 
-                url = "%s://%s:%s/api/report-upload/application/%s" % (self.protocol, self.server, self.port, self.tokenId)
+                url = "%s://%s:%s/api/report-upload/language/%s" % (self.protocol, self.server, self.port, self.tokenId)
                 fin = open('%s/%s.json' % (self.report_path, self.report_name), 'rb')
                 files = {'file': fin}
                 response = requests.post(url, files = files)
@@ -682,22 +738,22 @@ class applicationVulnerabilities():
                         print "[ ERROR ] Report Upload Error"
 
 		
-	def syncData(self, product):
-            	#try:
-
-                url = "%s://%s:%s/api/vulnapp/%s" % (self.protocol, self.server, self.port, product)
+	def syncData(self, productLists):
+            try:
+                url = "%s://%s:%s/api/scanDetails/pip" % (self.protocol, self.server, self.port)
                 headers = {
                         'Authorization': 'Basic QWRtaW5pc3RyYXRvcjpWZXJzYUAxMjM=',
                         'Content-Type': 'application/json'
                 }
+                payload = "{\"data\": \""+ ','.join(productLists) + "\"}"
 
-                response = requests.request("GET", url, headers=headers)
+                response = requests.request("POST", url, headers=headers, data = payload)
                 responseData = response.json()
                 self.responseData = responseData
 		print self.responseData
-            	#except:
-                #print "[ OK ] Database sync error! Check internet connectivity"
-                #sys.exit(1)
+            except:
+                print "[ OK ] Database sync error! Check internet connectivity"
+                sys.exit(1)
 
 
 	def query_yes_no(self, question, default="yes"):
@@ -726,6 +782,7 @@ class applicationVulnerabilities():
 
 if __name__ == "__main__":
         parser = argparse.ArgumentParser()
+
 	parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
         parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
         parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws', required=True, default='local')
@@ -799,9 +856,9 @@ modified versions of the software inside them, although the m
 
 Do you want to accept ?
         """
-        res = applicationVulnerabilities(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner)
+        res = getPipVulnerabilities(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner)
 
         if res.query_yes_no(data):
-                res.scanPackage()
+                res.scanPipPackage()
         else:
                 sys.exit(1)

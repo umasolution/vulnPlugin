@@ -63,7 +63,7 @@ class platformVulnCheck():
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
 
                 self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = "source"
+                self.results['header']['source type'] = targetFolder
 
                 self.vuln_depe = []
                 self.vuln_found = []

@@ -2,6 +2,7 @@
 # This script is use to find the python Composer packages vulnerabilities from linux machine and python source project.
 
 import time
+import docker
 import glob2
 import random
 import os.path
@@ -18,11 +19,13 @@ from datetime import datetime
 
 
 class getComposerVulnerabilities():
-	def __init__(self, reportPath, project, targetFolder, owner):
+	def __init__(self, reportPath, project, target, reponame, imagename, imagetags, owner):
 		self.reportPath = reportPath
-                self.sourcefolder = targetFolder
+                self.target = target
                 self.project = project
-
+                self.reponame = reponame
+                self.imagename = imagename
+                self.imagetags = imagetags
 
                 if not path.exists("server.config"):
                         print "[ INFO ] server configuration json file not found in current directory"
@@ -49,7 +52,10 @@ class getComposerVulnerabilities():
 
 
 
+		self.installPackageLists = []
+
 		self.results = {}
+		self.results['images'] = {}
                 self.results['header'] = {}
                 self.results['header']['project'] = self.project
                 self.results['header']['project owner'] = owner
@@ -133,7 +139,7 @@ class getComposerVulnerabilities():
 
                 return ver1
 
-	def matchVer(self, mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, dependancy, patch):
+	def matchVer(self, mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, dependancy, patch, image):
 		mVersions = self.getMatchVersionLists(product, vendor, mVersions)
 		mVer =  self.maxValue(mVersions)
 
@@ -155,8 +161,8 @@ class getComposerVulnerabilities():
 
 			if self.gtEq(vers1, mVer) and self.ltEq(vers2, mVer):
                                 res = {}
-                                if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                if severity not in self.results['images'][image]['Issues']:
+                                        self.results['images'][image]['Issues'][severity] = []
 
                                 res['product'] = str(product)
                                 res['vendor'] = str(vendor)
@@ -171,8 +177,8 @@ class getComposerVulnerabilities():
                                 res['Introduced through'] = str(dependancy)
                                 res['Versions'] = str(mVer)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                if res not in self.results['images'][image]['Issues'][severity]:
+                                        self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -191,8 +197,8 @@ class getComposerVulnerabilities():
 
                         if self.gt(vers1, mVer) and self.ltEq(vers2, mVer):
                                 res = {}
-                                if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                if severity not in self.results['images'][image]['Issues']:
+                                        self.results['images'][image]['Issues'][severity] = []
 
                                 res['product'] = str(product)
                                 res['vendor'] = str(vendor)
@@ -207,8 +213,8 @@ class getComposerVulnerabilities():
                                 res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                if res not in self.results['images'][image]['Issues'][severity]:
+                                        self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -228,8 +234,8 @@ class getComposerVulnerabilities():
 
                         if self.gtEq(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
-                                if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                if severity not in self.results['images'][image]['Issues']:
+                                        self.results['images'][image]['Issues'][severity] = []
 
                                 res['product'] = str(product)
                                 res['vendor'] = str(vendor)
@@ -244,8 +250,8 @@ class getComposerVulnerabilities():
                                 res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                if res not in self.results['images'][image]['Issues'][severity]:
+                                        self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -264,8 +270,8 @@ class getComposerVulnerabilities():
 
                         if self.gt(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
-                                if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                if severity not in self.results['images'][image]['Issues']:
+                                        self.results['images'][image]['Issues'][severity] = []
 
                                 res['product'] = str(product)
                                 res['vendor'] = str(vendor)
@@ -280,8 +286,8 @@ class getComposerVulnerabilities():
                                 res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                if res not in self.results['images'][image]['Issues'][severity]:
+                                        self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -300,8 +306,8 @@ class getComposerVulnerabilities():
 
                         if self.gt(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
-                                if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                if severity not in self.results['images'][image]['Issues']:
+                                        self.results['images'][image]['Issues'][severity] = []
 
                                 res['product'] = str(product)
                                 res['vendor'] = str(vendor)
@@ -316,8 +322,8 @@ class getComposerVulnerabilities():
                                 res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                if res not in self.results['images'][image]['Issues'][severity]:
+                                        self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -334,8 +340,8 @@ class getComposerVulnerabilities():
                         vers1 = str(vers)
                         if self.eq(vers1, mVer):
                                 res = {}
-                                if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                if severity not in self.results['images'][image]['Issues']:
+                                        self.results['images'][image]['Issues'][severity] = []
 
                                 res['product'] = str(product)
                                 res['vendor'] = str(vendor)
@@ -350,8 +356,8 @@ class getComposerVulnerabilities():
                                 res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                if res not in self.results['images'][image]['Issues'][severity]:
+                                        self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -366,7 +372,206 @@ class getComposerVulnerabilities():
 
 
 
-	def getVulnData(self, product, vendor, mVersions, depend):
+	def getAWSImage(self, authUser, authPass, target):
+                client = docker.from_env()
+                cmd = 'sudo /usr/local/bin/aws ecr get-login-password --region us-east-1 | sudo docker login --username AWS --password-stdin %s' % self.repoUrl
+                tatus, output = commands.getstatusoutput(cmd)
+                if not re.findall(r'Login Succeeded', str(output)):
+                        print "[ OK ] Check AWS credential, something wrong!"
+                        sys.exit(1)
+
+                cmd = 'aws ecr describe-repositories'
+                status, output = commands.getstatusoutput(cmd)
+                output = json.loads(output)
+                resArray = []
+                for repo in output['repositories']:
+                        repoName = repo['repositoryName']
+                        cmd = 'aws ecr describe-images --repository-name %s' % repoName
+                        status, output = commands.getstatusoutput(cmd)
+                        output = json.loads(output)
+                        for imgDetail in output['imageDetails']:
+                                if 'imageTags' in imgDetail:
+                                        for tag in imgDetail['imageTags']:
+                                                tagName = tag
+                                                imageName = "%s/%s:%s" % (self.repoUrl, repoName, tagName)
+                                                resArray.append(imageName)
+
+                return resArray
+
+
+	def getAZImage(self, authUser, authPass, target):
+                client = docker.from_env()
+                cmd = 'sudo az acr login --username %s --password %s --name %s' % (authUser, authPass, self.repoUrl)
+                status, output = commands.getstatusoutput(cmd)
+                if not re.findall(r'Login Succeeded', str(output)):
+                        print "[ OK ] Check Azure credential, something wrong!"
+                        sys.exit(1)
+
+                cmd = 'az acr repository list --username %s --password %s --name %s --out json > /tmp/azure' % (authUser, authPass, self.repoUrl)
+                status, output = commands.getstatusoutput(cmd)
+
+                cmd = "cat /tmp/azure"
+                status, output = commands.getstatusoutput(cmd)
+                output = json.loads(output)
+
+                resArray = []
+                for repo in output:
+                        namespace = repo.split("/")[0]
+                        image = repo.split("/")[1]
+                        imgUrl = repo
+                        imageName = "%s/%s/%s" % (self.repoUrl, namespace, image)
+                        resArray.append(imageName)
+
+                return resArray
+
+
+	def getDockerHubImage(self, authUser, authPass, target):
+                headers = {
+                        'Content-Type': 'application/json',
+                }
+
+                data = '{"username": "%s", "password": "%s"}' % (authUser, authPass)
+
+                response = requests.post('https://hub.docker.com/v2/users/login/', headers=headers, data=data)
+
+                resp = json.loads(response.text)
+                token = resp['token']
+
+                headers = {'Authorization': 'JWT %s' % token}
+                response = requests.get('https://hub.docker.com/v2/repositories/namespaces/', headers=headers)
+                namespaces = json.loads(response.text)
+
+
+                params = (
+                        ('page_size', '10000'),
+                )
+
+                resArray = []
+                for namespace in namespaces["namespaces"]:
+                        response = requests.get('https://hub.docker.com/v2/repositories/%s/' % namespace, headers=headers, params=params)
+                        imgNames = json.loads(response.text)
+                        for img in imgNames['results']:
+                                imgName = img['name']
+                                response = requests.get('https://hub.docker.com/v2/repositories/%s/%s/tags/' % (namespace, imgName), headers=headers, params=params)
+                                tagNames = json.loads(response.text)
+
+                                for tag in tagNames['results']:
+                                        tagsName = tag['name']
+                                        imageName = "%s/%s:%s" % (namespace, imgName, tagsName)
+                                        resArray.append(imageName)
+
+                return resArray
+
+
+	def getLocalImage(self):
+                imagesArray = []
+                client = docker.from_env()
+                images = client.images.list()
+                print images
+                for image in images:
+                        imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
+                        print imageName
+                        imgs = re.findall(r'\'(.*?)\'', str(imageName))
+                        for img in imgs:
+                                imagesArray.append(img)
+
+                return imagesArray
+
+
+	def getimagepkgVer(self, images):
+                self.resultsPkg = {}
+                self.resultsPkg['images'] = {}
+
+                for image in images:
+                        imageName = image
+                        if "/" in imageName:
+                                container_name = imageName.split("/")[1]
+                                container_name = container_name.replace(":", "_")
+                        else:
+                                container_name = imageName.replace(":", "_")
+
+                        cmd = 'docker run --name %s -it -d %s' % (container_name, imageName)
+                        print cmd
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                        cmd = 'docker export %s > /tmp/%s.tar' % (container_name, container_name)
+                        print cmd
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                        cmd = 'docker rm --force %s' % (container_name)
+                        print cmd
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                        cmd = 'mkdir /tmp/%s' % container_name
+                        print cmd
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                        cmd = 'sudo tar -xf /tmp/%s.tar -C /tmp/%s/' % (container_name, container_name)
+                        print cmd
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                        cmd = 'cat /tmp/%s/etc/os-release' % container_name
+                        print cmd
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                        os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                        os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                        if os_name.strip() == "debian":
+                                os_type = re.findall(r'^VERSION=\"\d+\s+\((.*)\)\"', str(data), flags=re.MULTILINE)[0]
+                        elif  os_name.strip() == "ubuntu":
+                                os_type = re.findall(r'PRETTY_NAME=\"(.*)\"', str(data), flags=re.MULTILINE)[0]
+                        else:
+                                os_type = ''
+
+                        imageName = str(imageName)
+                        self.resultsPkg['images'][imageName] = {}
+                        self.resultsPkg['images'][imageName]['os_name'] = str(os_name.strip())
+                        self.resultsPkg['images'][imageName]['os_version'] = str(os_version.replace('"', '').strip())
+                        self.resultsPkg['images'][imageName]['os_type'] = str(os_type.strip())
+
+                        self.getInstallPkgList("/tmp/%s" % container_name, imageName)
+
+                        cmd = "rm -rf /tmp/%s*" % container_name
+                        print cmd
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
+
+                return self.resultsPkg
+
+
+	def genPkgVer(self):
+                if self.target.lower() == "local":
+                        imagesArray = self.getLocalImage()
+                        output = self.getimagepkgVer(imagesArray)
+
+                if self.target.lower() == "docker":
+                        imagesArray = self.getDockerHubImage(self.username, self.password, self.target)
+                        output = self.getimagepkgVer(imagesArray)
+
+                if self.target.lower() == "aws":
+                        imagesArray = self.getAWSImage(self.username, self.password, self.target)
+                        output = self.getimagepkgVer(imagesArray)
+
+                if self.target.lower() == "azure":
+                        imagesArray = self.getAZImage(self.username, self.password, self.target)
+                        output = self.getimagepkgVer(imagesArray)
+
+                return output	
+
+	def getVulnData(self, product, vendor, mVersions, depend, image):
                 for row in self.responseData["results"]["%s/%s" % (vendor, product)]:
                         cve_id = row['cve_id']
 			versions = row['versions']
@@ -378,148 +583,140 @@ class getComposerVulnerabilities():
 			pub_date = row['pub_date']
 			patch = row['patch']
 			severity = row['severity']
-			self.matchVer(mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, depend, patch)
+			self.matchVer(mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, depend, patch, image)
 
 
-	def getInstallPkgList(self):
-		installPackageLists = []
+	def getInstallPkgList(self, location, image):
+		for file in glob2.glob('%s/**/composer.*' % (location), recursive=True):
+		    file = os.path.abspath(file)
+                    filename = os.path.basename(file)
 
-		for file in glob2.glob('%s/**/composer.*' % (self.sourcefolder), recursive=True):
-			file = os.path.abspath(file)
-			filename = os.path.basename(file)
-			print file
-			print filename
+		    if 'files' not in self.resultsPkg['images'][image]:
+                    	self.resultsPkg['images'][image]['files'] = {}
 
+		    if filename == "composer.lock":
+			with open(file) as f:
+			    data = json.load(f)
 
-			if 'files' not in self.results:
-                        	self.results['files'] = {}
+			self.resultsPkg['images'][image]['files'][filename] = {}
 
-			if filename == "composer.lock":
-
-			    with open(file) as f:
-				data = json.load(f)
-
-			    self.results['files'][filename] = {}
-			    for pkg in data['packages']:
+			for pkg in data['packages']:
 				package_name = pkg['name']
-				print package_name
 
 		    		if "/" in package_name:
-					if package_name not in installPackageLists:
-						installPackageLists.append(package_name)
+					if package_name not in self.installPackageLists:
+						self.installPackageLists.append(package_name)
 
 					vendor = package_name.split("/")[0]
 					product = package_name.split("/")[1]
 					versions = pkg['version']
-					print "%s - %s - %s" % (vendor, product, versions)
 
-					if package_name not in self.results['files'][filename]:
-						self.results['files'][filename][str(package_name)] = {}
-						self.results['files'][filename][str(package_name)]["product"] = str(product)
-						self.results['files'][filename][str(package_name)]["vendor"] = str(vendor)
-						self.results['files'][filename][str(package_name)]["version"] = []
-						self.results['files'][filename][str(package_name)]["depend"] = []
+					if package_name not in self.resultsPkg['images'][image]['files'][filename]:
+						self.resultsPkg['images'][image]['files'][filename][str(package_name)] = {}
+						self.resultsPkg['images'][image]['files'][filename][str(package_name)]["product"] = str(product)
+						self.resultsPkg['images'][image]['files'][filename][str(package_name)]["vendor"] = str(vendor)
+						self.resultsPkg['images'][image]['files'][filename][str(package_name)]["version"] = []
+						self.resultsPkg['images'][image]['files'][filename][str(package_name)]["depend"] = []
 
-					if versions not in self.results['files'][filename][package_name]["version"]:
-						self.results['files'][filename][package_name]["version"].append(str(versions))
+					if versions not in self.resultsPkg['images'][image]['files'][filename][package_name]["version"]:
+						self.resultsPkg['images'][image]['files'][filename][package_name]["version"].append(str(versions))
 
 					if 'require' in pkg:
 					    for d in pkg['require']:
 						if "/" in d:
-							if d not in installPackageLists:
-								installPackageLists.append(d)
+							if d not in self.installPackageLists:
+								self.installPackageLists.append(d)
 
 							vendor1 = d.split("/")[0]
 							product1 = d.split("/")[1]
 							versions1 = pkg['require'][d]
 
-							if d not in self.results['files'][filename]:
-								self.results['files'][filename][str(d)] = {}
-								self.results['files'][filename][str(d)]["product"] = str(product1)
-								self.results['files'][filename][str(d)]["vendor"] = str(vendor1)
-								self.results['files'][filename][str(d)]["version"] = []
-								self.results['files'][filename][str(d)]["depend"] = []
+							if d not in self.resultsPkg['images'][image]['files'][filename]:
+								self.resultsPkg['images'][image]['files'][filename][str(d)] = {}
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["product"] = str(product1)
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["vendor"] = str(vendor1)
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["version"] = []
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["depend"] = []
 
-							if versions1 not in self.results['files'][filename][d]["version"]:
-								self.results['files'][filename][str(d)]["version"].append(str(versions1))
+							if versions1 not in self.resultsPkg['images'][image]['files'][filename][d]["version"]:
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["version"].append(str(versions1))
 
-							if "%s@%s" % (str(package_name), str(versions)) not in self.results['files'][filename][d]["depend"]:
-								self.results['files'][filename][str(d)]["depend"].append("%s@%s" % (str(package_name), str(versions)))
+							if "%s@%s" % (str(package_name), str(versions)) not in self.resultsPkg['images'][image]['files'][filename][d]["depend"]:
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["depend"].append("%s@%s" % (str(package_name), str(versions)))
 
 					if 'require-dev' in pkg:
 					    for d in pkg['require-dev']:
 						if "/" in d:
-							if d not in installPackageLists:
-								installPackageLists.append(d)
+							if d not in self.installPackageLists:
+								self.installPackageLists.append(d)
 
 							vendor2 = d.split("/")[0]
 							product2 = d.split("/")[1]
 							versions2 = pkg['require-dev'][d]
 
-							if d not in self.results['files'][filename]:
-								self.results['files'][filename][str(d)] = {}
-								self.results['files'][filename][str(d)]["product"] = str(product2)
-								self.results['files'][filename][str(d)]["vendor"] = str(vendor2)
-								self.results['files'][filename][str(d)]["version"] = []
-								self.results['files'][filename][str(d)]["depend"] = []
+							if d not in self.resultsPkg['images'][image]['files'][filename]:
+								self.resultsPkg['images'][image]['files'][filename][str(d)] = {}
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["product"] = str(product2)
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["vendor"] = str(vendor2)
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["version"] = []
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["depend"] = []
 
-							if versions2 not in self.results['files'][filename][d]["version"]:
-								self.results['files'][filename][str(d)]["version"].append(str(versions2))
+							if versions2 not in self.resultsPkg['images'][image]['files'][filename][d]["version"]:
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["version"].append(str(versions2))
 
-							if "%s@%s" % (str(package_name), str(versions)) not in self.results['files'][filename][d]["depend"]:
-								self.results['files'][filename][str(d)]["depend"].append("%s@%s" % (str(package_name), str(versions)))
+							if "%s@%s" % (str(package_name), str(versions)) not in self.resultsPkg['images'][image]['files'][filename][d]["depend"]:
+								self.resultsPkg['images'][image]['files'][filename][str(d)]["depend"].append("%s@%s" % (str(package_name), str(versions)))
 
 
 
-			if filename == "composer.json":
+		    if filename == "composer.json":
+			with open(file) as f:
+			    data = json.load(f)
 
-			    with open(file) as f:
-				data = json.load(f)
+			self.resultsPkg['images'][image]['files'][filename] = {}
 
-			    self.results['files'][filename] = {}
-			    if 'require' in data:
+			if 'require' in data:
 			    	for d in data['require']:
 		    		    if "/" in d:
-					if d not in installPackageLists:
-						installPackageLists.append(d)
+					if d not in self.installPackageLists:
+						self.installPackageLists.append(d)
 
 					vendor3 = d.split("/")[0]
 					product3 = d.split("/")[1]
 					versions3 = data['require'][d]
 					
-					if d not in self.results['files'][filename]:
-						self.results['files'][filename][str(d)] = {}
-						self.results['files'][filename][str(d)]["product"] = str(product3)
-						self.results['files'][filename][str(d)]["vendor"] = str(vendor3)
-						self.results['files'][filename][str(d)]["version"] = []
-						self.results['files'][filename][str(d)]["depend"] = []
+					if d not in self.resultsPkg['images'][image]['files'][filename]:
+						self.resultsPkg['images'][image]['files'][filename][str(d)] = {}
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["product"] = str(product3)
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["vendor"] = str(vendor3)
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["version"] = []
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["depend"] = []
 
-					if str(versions3) not in  self.results['files'][filename][d]["version"]:
-						self.results['files'][filename][str(d)]["version"].append(str(versions3))
+					if str(versions3) not in  self.resultsPkg['images'][image]['files'][filename][d]["version"]:
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["version"].append(str(versions3))
 
 
-			    if 'require-dev' in data:
+			if 'require-dev' in data:
 			    	for d in data['require-dev']:
 		    		    if "/" in d:
-					if d not in installPackageLists:
-						installPackageLists.append(d)
+					if d not in self.installPackageLists:
+						self.installPackageLists.append(d)
 
 					vendor4 = d.split("/")[0]
 					product4 = d.split("/")[1]
 					versions4 = data['require-dev'][d]
 					
-					if d not in self.results['files'][filename]:
-						self.results['files'][filename][str(d)] = {}
-						self.results['files'][filename][str(d)]["product"] = str(product4)
-						self.results['files'][filename][str(d)]["vendor"] = str(vendor4)
-						self.results['files'][filename][str(d)]["version"] = []
-						self.results['files'][filename][str(d)]["depend"] = []
+					if d not in self.resultsPkg['images'][image]['files'][filename]:
+						self.resultsPkg['images'][image]['files'][filename][str(d)] = {}
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["product"] = str(product4)
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["vendor"] = str(vendor4)
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["version"] = []
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["depend"] = []
 			
-					if str(versions4) not in self.results['files'][filename][d]["version"]:
-						self.results['files'][filename][str(d)]["version"].append(str(versions4))
+					if str(versions4) not in self.resultsPkg['images'][image]['files'][filename][d]["version"]:
+						self.resultsPkg['images'][image]['files'][filename][str(d)]["version"].append(str(versions4))
 
 
-		return installPackageLists
 		
 		print "[ OK ] Getting Installed Python Library Details From Target"
 			
@@ -533,25 +730,31 @@ class getComposerVulnerabilities():
 
 	def scanComposerPackage(self):
 		print "[ OK ] Preparing..."
-		output = self.getInstallPkgList()
+		output = self.genPkgVer()
 		print "[ OK ] Database sync started"
-		self.syncData(output)
+		if len(self.installPackageLists) == 0:
+			print "[ OK ] Not found any composer.json and composer.lock file"
+			sys.exit(1)
+
+		self.syncData(self.installPackageLists)
 		print "[ OK ] Database sync comleted"
 		self.med = []
                 self.hig = []
                 self.low = []
-                self.cri = []
 		print "[ OK ] Scanning started"
 
-		self.results['Issues'] = {}
-		for filename in self.results['files']:
-			for d in self.results['files'][filename]:
-				print d
-				vendor = self.results['files'][filename][d]['vendor']
-				product = self.results['files'][filename][d]['product']
-				version = self.results['files'][filename][d]['version']
-				depend = self.results['files'][filename][d]['depend']
-				self.getVulnData(product, vendor, version[0], ','.join(depend))
+		for image in output['images']:
+			if image not in self.results['images']:
+				self.results['images'][image] = {}
+				self.results['images'][image]['Issues'] = {}
+			if 'files' in output['images'][image]:
+				for filename in output['images'][image]['files']:
+					for d in output['images'][image]['files'][filename]:
+						vendor = output['images'][image]['files'][filename][d]['vendor']
+						product = output['images'][image]['files'][filename][d]['product']
+						version = output['images'][image]['files'][filename][d]['version']
+						depend = output['images'][image]['files'][filename][d]['depend']
+						self.getVulnData(product, vendor, version[0], ','.join(depend), image)
 
 		print "[ OK ] Scanning Completed"
 
@@ -630,7 +833,10 @@ if __name__ == "__main__":
 
         parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
         parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-        parser.add_argument('-t', '--target', type=str,  help='Enter target source folder', required=True)
+        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws', required=True, default='local')
+        parser.add_argument('-repo', '--reponame', type=str,  help='Enter repository name', default='*')
+        parser.add_argument('-image', '--imagename', type=str,  help='Enter Image name', default='*')
+        parser.add_argument('-tags', '--imagetags', type=str,  help='Enter Image tags', default='*')
         parser.add_argument('-o', '--owner', type=str,  help='Enter project owner')
 
         parser.add_argument('-v', '--version', action='version',
@@ -698,7 +904,7 @@ modified versions of the software inside them, although the m
 
 Do you want to accept ?
         """
-        res = getComposerVulnerabilities(results.reportPath, results.projectname, results.target, owner)
+        res = getComposerVulnerabilities(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner)
 
         if res.query_yes_no(data):
                 res.scanComposerPackage()

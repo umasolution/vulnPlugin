@@ -562,9 +562,9 @@ class applicationVulnerabilities():
 
 			cmd = "rm -rf /tmp/%s*" % container_name
                         print cmd
-                        #status, output = commands.getstatusoutput(cmd)
-                        #data = output
-                        #print data
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
+                        print data
 
 
 	def getImageDetails(self, resJson, imageName, container_name):

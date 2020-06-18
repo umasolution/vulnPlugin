@@ -2,6 +2,7 @@
 # This script is use to find the python PIP packages vulnerabilities from linux machine and python source project.
 
 import time
+import glob2
 import os
 from os import path
 import random
@@ -364,10 +365,13 @@ class getPipVulnerabilities():
 
 	def getInstallPkgList(self):
 		resultsPackage = []
-		self.results['packages'] = []
 
 		print "[ OK ] Getting Installed Python Library Details From Target"
 		if self.scan_type == "package":
+			self.results['files'] = {}
+			self.results['files']['requirement.txt'] = {}
+			self.results['files']['requirement.txt']['packages'] = []
+
 			status, output = commands.getstatusoutput("pip freeze")
 			for strLine in output.split("\n"):
 			    if re.findall(r'(.*)==(.*)', str(strLine)):
@@ -377,14 +381,24 @@ class getPipVulnerabilities():
 				res = {}
 				res['product'] = product.strip()
 				res['versions'] = versions.replace(" ", "")
-				self.results['packages'].append(res)
+				self.results['files']['requirement.txt']['packages'].append(res)
 				resultsPackage.append(product.strip())
 
 		if self.scan_type == "source":
-			text_files = [f for f in os.listdir(self.sourcefolder) if f.endswith('quirements.txt')]
-			for txtFile in text_files:
-				print txtFile
-				fileData = open("%s/%s" % (self.sourcefolder, txtFile))
+			for file in glob2.glob('%s/**/*requirement*.txt' % (self.sourcefolder), recursive=True):
+				file = os.path.abspath(file)
+				filename = os.path.basename(file)
+
+				if 'files' not in self.results:
+					self.results['files'] = {}
+
+				if filename not in self.results['files']:
+					self.results['files'][filename] = {}
+					self.results['files'][filename]['packages'] = []
+				
+
+				fileData = open(file)
+
 				for lineFile in fileData.readlines():
 					for strLine in lineFile.split(";"):
 						if re.findall(r'(.*)(>=|==)(.*)', str(strLine)):
@@ -394,7 +408,7 @@ class getPipVulnerabilities():
 							res = {}
 							res['product'] = product.strip()
 							res['versions'] = versions.replace(" ", "")
-							self.results['packages'].append(res)
+							self.results['files'][filename]['packages'].append(res)
 							resultsPackage.append(product.strip())
 							print "%s - %s" % (product.strip(), versions.replace(" ", ""))
 
@@ -478,12 +492,13 @@ class getPipVulnerabilities():
 		self.results['Issues'] = {}
 
 		print "[ OK ] Scan started"
-		for result in self.results['packages']:
-			product = result['product']
-			versions = result['versions']
+		for filename in self.results['files']:
+			for result in self.results['files'][filename]['packages']:
+				product = result['product']
+				versions = result['versions']
 
-			print "%s - %s" % (product, versions)
-			self.getVulnData(product, versions)
+				print "%s - %s" % (product, versions)
+				self.getVulnData(product, versions)
 
 		print "[ OK ] Scan completed"
 	

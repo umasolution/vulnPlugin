@@ -2,6 +2,7 @@
 # This script is use to find the python NPM packages vulnerabilities from linux machine and python source project.
 
 
+import glob2
 import os.path
 import time
 import random
@@ -366,7 +367,9 @@ class getNpmVulnerabilities():
 
 
 	def getVulnData(self, product, mVersions, filename, dependancy):
-		for productName in self.responseData["results"][product]:
+		print "%s - %s - %s - %s" % (product, mVersions, filename, dependancy)
+		if product in self.responseData["results"]:
+		    for productName in self.responseData["results"][product]:
                         cve_id = productName['cve_id']
 			product = productName['product']
 			versions = productName['versions']
@@ -388,15 +391,15 @@ class getNpmVulnerabilities():
                 ppProduct = str(rDetail)
                 ppVersion = d["requires"][rDetail]
 		ppVersion = str(ppVersion)
-                if ppProduct not in self.results[self.filename]:
+                if ppProduct not in self.resultsPkg['files'][self.filename][self.file]:
 			self.packageLists.append(ppProduct)
-                        self.results[self.filename][ppProduct] = {}
-                        self.results[self.filename][ppProduct]["version"] = str(ppVersion)
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct] = {}
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]["version"] = str(ppVersion)
 
-                if 'depend' not in self.results[self.filename][ppProduct]:
-                        self.results[self.filename][ppProduct]['depend'] = []
+                if 'depend' not in self.resultsPkg['files'][self.filename][self.file][ppProduct]:
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'] = []
 
-                self.results[self.filename][ppProduct]['depend'].append("%s@%s > %s@%s" % (str(pProduct), str(vVersion), str(ppProduct), str(vvVersion)))
+                self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'].append("%s@%s > %s@%s" % (str(pProduct), str(vVersion), str(ppProduct), str(vvVersion)))
 
 
 
@@ -405,15 +408,15 @@ class getNpmVulnerabilities():
                 ppProduct = str(rDetail)
                 ppVersion = d["requires"][rDetail]
 		ppVersion = str(ppVersion)
-                if ppProduct not in self.results[self.filename]:
+                if ppProduct not in self.resultsPkg['files'][self.filename][self.file]:
 			self.packageLists.append(ppProduct)
-                        self.results[self.filename][ppProduct] = {}
-                        self.results[self.filename][ppProduct]["version"] = str(ppVersion)
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct] = {}
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]["version"] = str(ppVersion)
 
-                if 'depend' not in self.results[self.filename][ppProduct]:
-                        self.results[self.filename][ppProduct]['depend'] = []
+                if 'depend' not in self.resultsPkg['files'][self.filename][self.file][ppProduct]:
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'] = []
 
-                self.results[self.filename][ppProduct]['depend'].append("%s@%s > %s@%s > %s@%s" % (str(pProduct), str(vVersion), str(ppProduct), str(vvVersion), str(pppProduct), str(vvvVersion)))
+                self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'].append("%s@%s > %s@%s > %s@%s" % (str(pProduct), str(vVersion), str(ppProduct), str(vvVersion), str(pppProduct), str(vvvVersion)))
 
 
 	def getRequires(self, d, pProduct, vVersion):
@@ -422,15 +425,15 @@ class getNpmVulnerabilities():
                 ppVersion = d["requires"][rDetail]
 		ppVersion = str(ppVersion)
 		
-                if ppProduct not in self.results[self.filename]:
+                if ppProduct not in self.resultsPkg['files'][self.filename][self.file]:
 			self.packageLists.append(ppProduct)
-                        self.results[self.filename][ppProduct] = {}
-                        self.results[self.filename][ppProduct]["version"] = str(ppVersion)
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct] = {}
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]["version"] = str(ppVersion)
 
-                if 'depend' not in self.results[self.filename][ppProduct]:
-                        self.results[self.filename][ppProduct]['depend'] = []
+                if 'depend' not in self.resultsPkg['files'][self.filename][self.file][ppProduct]:
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'] = []
 
-                self.results[self.filename][ppProduct]['depend'].append("%s@%s" % (str(pProduct), str(vVersion)))
+                self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'].append("%s@%s" % (str(pProduct), str(vVersion)))
 
 
 	def getDependencies(self, d, pProduct, vVersion):
@@ -439,15 +442,15 @@ class getNpmVulnerabilities():
                 ppVersion = d["dependencies"][rDetail]["version"]
 		ppVersion = str(ppVersion)
 
-                if ppProduct not in self.results[self.filename]:
+                if ppProduct not in self.resultsPkg['files'][self.filename][self.file]:
 			self.packageLists.append(ppProduct)
-                        self.results[self.filename][ppProduct] = {}
-                        self.results[self.filename][ppProduct]["version"] = str(ppVersion)
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct] = {}
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]["version"] = str(ppVersion)
 
-                if 'depend' not in self.results[self.filename][ppProduct]:
-                        self.results[self.filename][ppProduct]['depend'] = []
+                if 'depend' not in self.resultsPkg['files'][self.filename][self.file][ppProduct]:
+                        self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'] = []
 
-                self.results[self.filename][ppProduct]['depend'].append("%s@%s" % (str(pProduct), str(vVersion)))
+                self.resultsPkg['files'][self.filename][self.file][ppProduct]['depend'].append("%s@%s" % (str(pProduct), str(vVersion)))
 
 
                 if "requires" in d["dependencies"][rDetail]:
@@ -468,15 +471,15 @@ class getNpmVulnerabilities():
 					pppVersion = d["dependencies"][rDetail]["dependencies"][rrDetail]
 					pppVersion = str(pppVersion)
 
-                                if pppProduct not in self.results[self.filename]:
+                                if pppProduct not in self.resultsPkg['files'][self.filename][self.file]:
 					self.packageLists.append(pppProduct)
-                                        self.results[self.filename][pppProduct] = {}
-                                        self.results[self.filename][pppProduct]["version"] = pppVersion
+                                        self.resultsPkg['files'][self.filename][self.file][pppProduct] = {}
+                                        self.resultsPkg['files'][self.filename][self.file][pppProduct]["version"] = pppVersion
 
-                                if "depend" not in self.results[self.filename][pppProduct]:
-                                        self.results[self.filename][pppProduct]["depend"] = []
+                                if "depend" not in self.resultsPkg['files'][self.filename][self.file][pppProduct]:
+                                        self.resultsPkg['files'][self.filename][self.file][pppProduct]["depend"] = []
 
-                                self.results[self.filename][pppProduct]['depend'].append("%s@%s > %s@%s > %s@%s" % (str(pProduct), str(vVersion), str(ppProduct), str(ppVersion), str(pppProduct), str(pppVersion)))
+                                self.resultsPkg['files'][self.filename][self.file][pppProduct]['depend'].append("%s@%s > %s@%s > %s@%s" % (str(pProduct), str(vVersion), str(ppProduct), str(ppVersion), str(pppProduct), str(pppVersion)))
 
 	def getPackageLockJson(self, data):
                 for d in data["dependencies"]:
@@ -488,13 +491,13 @@ class getNpmVulnerabilities():
 				version = data["dependencies"][d]
 				version = str(version)
 
-                        if product not in self.results[self.filename]:
+                        if product not in self.resultsPkg['files'][self.filename][self.file]:
 				self.packageLists.append(product)
-                                self.results[self.filename][product] = {}
-                                self.results[self.filename][product]["version"] = str(version)
+                                self.resultsPkg['files'][self.filename][self.file][product] = {}
+                                self.resultsPkg['files'][self.filename][self.file][product]["version"] = str(version)
 
-                        if 'depend' not in self.results[self.filename][product]:
-                                self.results[self.filename][product]["depend"] = []
+                        if 'depend' not in self.resultsPkg['files'][self.filename][self.file][product]:
+                                self.resultsPkg['files'][self.filename][self.file][product]["depend"] = []
 
                         if "requires" in data["dependencies"][d]:
                                 self.getRequires(data["dependencies"][d], product, version)
@@ -504,79 +507,88 @@ class getNpmVulnerabilities():
 
 
 	def getInstallPkgList(self):
-		self.packageLists = []
-		fileArray = ['package-lock.json', 'package.json']
-		for filename in fileArray:
-		    if path.exists("%s/%s" % (self.sourcefolder, filename)):  	
+	    self.resultsPkg = {}
+	    for file in glob2.glob('%s/**/package*.json' % (self.sourcefolder), recursive=True):
+	    	self.packageLists = []
+		file = os.path.abspath(file)
+		filename = os.path.basename(file)
+		if filename not in self.testedWith:
 			self.testedWith.append(filename)
-			file = "%s/%s" % (self.sourcefolder, filename)
 
-			with open(file) as f:
-				data = json.load(f)
+		self.filename = filename
+		self.file = file
 
-			if 'lockfileVersion' in data:
-				lock = True
-			else:
-				lock = False
+		with open(file) as f:
+			data = json.load(f)
+
+		if 'lockfileVersion' in data:
+			lock = True
+		else:
+			lock = False
 			
-			self.filename = filename
-			self.results[self.filename] = {}
+		if 'files' not in self.resultsPkg:
+			self.resultsPkg['files'] = {}
 
-			if lock:
-			    	self.results[self.filename]['lock'] = {}
-				self.getPackageLockJson(data)
+		if self.filename not in self.resultsPkg:
+			self.resultsPkg['files'][self.filename] = {}
 
-			if not lock:	
-			    if 'dependencies' in data:
-			    	self.results[self.filename]['dependencies'] = []
-			    	for d in data['dependencies']:
-		    		    if "/" in d:
-					res = {}
-					product = d.split("/")[1]
-					if product not in self.packageLists:
-						self.packageLists.append(str(product))
-					version = data['dependencies'][d]
-					res['product'] = product
-					res['version'] = version
-					res = ast.literal_eval(json.dumps(res))
-					self.results[self.filename]['dependencies'].append(res)
-				    else:
-					res = {}
-					product = d
-					version = data['dependencies'][d]
-					res['product'] = product
-					if product not in self.packageLists:
-						self.packageLists.append(str(product))
-					res['version'] = version
-					res = ast.literal_eval(json.dumps(res))
-					self.results[self.filename]['dependencies'].append(res)
-
-			    if 'devDependencies' in data:
-			    	self.results[self.filename]['devDependencies'] = []
-			    	for d in data['devDependencies']:
-		    		    if "/" in d:
-					res = {}
-					product = d.split("/")[1]
-					if product not in self.packageLists:
-						self.packageLists.append(str(product))
-					version = data['devDependencies'][d]
-					res['product'] = product
-					res['version'] = version
-					res = ast.literal_eval(json.dumps(res))
-					self.results[self.filename]['devDependencies'].append(res)
-				    else:
-					res = {}
-					product = d
-					if product not in self.packageLists:
-						self.packageLists.append(str(product))
-					version = data['devDependencies'][d]
-					res['product'] = product
-					res['version'] = version
-					res = ast.literal_eval(json.dumps(res))
-					self.results[self.filename]['devDependencies'].append(res)
+		self.resultsPkg['files'][self.filename][file] = {}
 
 
-		return self.results
+		if lock:
+		    	self.resultsPkg['files'][self.filename][file]['lock'] = {}
+			self.getPackageLockJson(data)
+
+		if not lock:	
+		    if 'dependencies' in data:
+		    	self.resultsPkg['files'][self.filename][file]['dependencies'] = []
+			for d in data['dependencies']:
+		    	    if "/" in d:
+				res = {}
+				product = d.split("/")[1]
+				if product not in self.packageLists:
+					self.packageLists.append(str(product))
+				version = data['dependencies'][d]
+				res['product'] = product
+				res['version'] = version
+				res = ast.literal_eval(json.dumps(res))
+				self.resultsPkg['files'][self.filename][file]['dependencies'].append(res)
+			    else:
+				res = {}
+				product = d
+				version = data['dependencies'][d]
+				res['product'] = product
+				if product not in self.packageLists:
+					self.packageLists.append(str(product))
+				res['version'] = version
+				res = ast.literal_eval(json.dumps(res))
+				self.resultsPkg['files'][self.filename][file]['dependencies'].append(res)
+
+		    if 'devDependencies' in data:
+		    	self.resultsPkg['files'][self.filename][file]['devDependencies'] = []
+		    	for d in data['devDependencies']:
+			    if "/" in d:
+				res = {}
+				product = d.split("/")[1]
+				if product not in self.packageLists:
+					self.packageLists.append(str(product))
+				version = data['devDependencies'][d]
+				res['product'] = product
+				res['version'] = version
+				res = ast.literal_eval(json.dumps(res))
+				self.resultsPkg['files'][self.filename][file]['devDependencies'].append(res)
+			    else:
+				res = {}
+				product = d
+				if product not in self.packageLists:
+					self.packageLists.append(str(product))
+				version = data['devDependencies'][d]
+				res['product'] = product
+				res['version'] = version
+				res = ast.literal_eval(json.dumps(res))
+				self.resultsPkg['files'][self.filename][file]['devDependencies'].append(res)
+
+	    return self.resultsPkg
 		
 	def getUnique(self, lists):
 		unique_list = [] 
@@ -588,12 +600,9 @@ class getNpmVulnerabilities():
 	def scanNpmPackage(self):
 		print "[ OK ] Preparing..."
 		output = self.getInstallPkgList()
-		#self.results['jsonFiles'] = output
 		self.med = []
 		self.hig = []
 		self.low = []
-
-		fileArray = ['package-lock.json', 'package.json']
 
 		print "[ OK ] Database sync started"
 		self.syncData(self.packageLists)
@@ -602,33 +611,37 @@ class getNpmVulnerabilities():
 		print "[ OK ] Scanning started"
 
 		self.results['Issues'] = {}
-		for filename in fileArray:
-		    if 'lock' not in output[filename]:
-	   	    	for d in output[filename]['devDependencies']:
-				product = d['product']
-				version = d['version']
-				self.dependanciesCount.append(product)
-				self.getVulnData(product, version, filename, '')
+		if 'files' in output:
+		    for filename in output['files']:
+		        for file in output['files'][filename]:
+		            if 'lock' not in output['files'][filename][file]:
+				if 'devDependencies' in output['files'][filename][file]:
+	   	    	            for d in output[filename][file]['devDependencies']:
+				    	product = d['product']
+				    	version = d['version']
+				    	self.dependanciesCount.append(product)
+				    	self.getVulnData(product, version, filename, '')
 
-		    	for d in output[filename]['dependencies']:
-				product = d['product']
-				version = d['version']
-				self.dependanciesCount.append(product)
-				self.getVulnData(product, version, filename, '')
+				if 'dependencies' in output['files'][filename][file]:
+		    	            for d in output['files'][filename][file]['dependencies']:
+				    	product = d['product']
+				    	version = d['version']
+				    	self.dependanciesCount.append(product)
+				    	self.getVulnData(product, version, filename, '')
 
-		    if 'lock' in output[filename]:
-			for d in output[filename]:
-			    if d != "lock":
-			    	if "/" in d:
-					product = d.split("/")[1]
-					version = output[filename][d]["version"]
-			    	else:
-					product = d
-					version = output[filename][d]["version"]
+		    	    if 'lock' in output['files'][filename][file]:
+			        for d in output['files'][filename][file]:
+			            if d != "lock":
+			    	        if "/" in d:
+					    product = d.split("/")[1]
+					    version = output['files'][filename][file][d]["version"]
+			    	        else:
+					    product = d
+					    version = output['files'][filename][file][d]["version"]
 
-				self.dependanciesCount.append(product)
-			    	dependancyDetails = output[filename][d]['depend']
-			    	self.getVulnData(product, version, filename, dependancyDetails)
+				        self.dependanciesCount.append(product)
+			    	        dependancyDetails = output['files'][filename][file][d]['depend']
+			    	        self.getVulnData(product, version, filename, dependancyDetails)
 
 
 		print "[ OK ] Scanning Completed"
