@@ -61,22 +61,18 @@ class applicationVulnerabilities():
 
                 self.results = {}
                 self.results['header'] = {}
-                self.results['header']['project'] = self.project
-                self.results['header']['project owner'] = owner
-                path1=os.path.dirname(self.reportPath)
-                self.results['header']['repository'] = os.path.basename(path1)
-
-                self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
+                self.results['header']['Date'] = self.report_name
+                self.results['header']['Project'] = self.project
+                self.results['header']['Owner'] = owner
+                self.report_path = reportPath
+                self.results['header']['Target'] = self.target
 
-                self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = targetFolder
-
-                self.vuln_depe = []
                 self.vuln_found = []
-                self.testedWith = []
-                self.dependanciesCount = []
+		self.scanApplications = []
+		self.vuln_product = []
+
 		self.med = []
                 self.low = []
                 self.hig = []
@@ -153,7 +149,12 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+					self.vuln_product.append(product)
+
                                 if res not in self.results['Issues'][severity]:
+					self.vuln_found.append(product)
+
                                         self.results['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -163,7 +164,7 @@ class applicationVulnerabilities():
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
 					if severity.lower() == "critical":
-						self.critical.append("Critical")
+						self.cri.append("Critical")
 
 
 		    elif re.findall(r'\(.*:.*\]', str(vers)):
@@ -190,7 +191,12 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+					self.vuln_product.append(product)
+
                                 if res not in self.results['Issues'][severity]:
+					self.vuln_found.append(product)
+
                                         self.results['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -200,7 +206,7 @@ class applicationVulnerabilities():
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
 					if severity.lower() == "critical":
-						self.critical.append("Critical")
+						self.cri.append("Critical")
 
 
 		    elif re.findall(r'\[.*:.*\)', str(vers)):
@@ -227,7 +233,12 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+					self.vuln_product.append(product)
+
                                 if res not in self.results['Issues'][severity]:
+					self.vuln_found.append(product)
+
                                         self.results['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -237,7 +248,7 @@ class applicationVulnerabilities():
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
 					if severity.lower() == "critical":
-						self.critical.append("Critical")
+						self.cri.append("Critical")
 
 
 		    elif re.findall(r'\(.*:.*\)', str(vers)):
@@ -264,7 +275,12 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+					self.vuln_product.append(product)
+
                                 if res not in self.results['Issues'][severity]:
+					self.vuln_found.append(product)
+
                                         self.results['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -274,7 +290,7 @@ class applicationVulnerabilities():
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
 					if severity.lower() == "critical":
-						self.critical.append("Critical")
+						self.cri.append("Critical")
 
 
 		    elif re.findall(r'\(.*:.*\)', str(vers)):
@@ -301,7 +317,12 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+					self.vuln_product.append(product)
+
                                 if res not in self.results['Issues'][severity]:
+					self.vuln_found.append(product)
+
                                         self.results['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -311,7 +332,7 @@ class applicationVulnerabilities():
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
 					if severity.lower() == "critical":
-						self.critical.append("Critical")
+						self.cri.append("Critical")
 
 
 		    else:
@@ -336,7 +357,12 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+					self.vuln_product.append(product)
+
                                 if res not in self.results['Issues'][severity]:
+					self.vuln_found.append(product)
+
                                         self.results['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -346,7 +372,7 @@ class applicationVulnerabilities():
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
 					if severity.lower() == "critical":
-						self.critical.append("Critical")
+						self.cri.append("Critical")
 
 
 	def getVulnData(self, productName, mVers):
@@ -443,7 +469,8 @@ class applicationVulnerabilities():
 		self.med = []
                 self.hig = []
                 self.low = []
-		self.critical = []
+		self.cri = []
+
 		packageLists = self.getInstallPkgList()
 		print packageLists
 		print self.results
@@ -460,20 +487,23 @@ class applicationVulnerabilities():
 			print "[ OK ] Snyc Data...."
 			self.syncData(product)
 			print "%s - %s" % (product, versions)
+			if product not in self.scanApplications:
+				self.scanApplications.append(product)
+
 			self.getVulnData(product, versions)
 
 		print "[ OK ] Scan completed"
-	
-		self.results['header']['tested with'] = ','.join(self.testedWith)
-                self.results['header']['severity'] = {}
-                self.results['header']['dependancies'] = len(self.dependanciesCount)
-                self.results['header']['severity']['low'] = len(self.low)
-                self.results['header']['severity']['high'] = len(self.hig)
-                self.results['header']['severity']['medium'] = len(self.med)
-                self.results['header']['severity']['critical'] = len(self.critical)
-                self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-                self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
 
+                self.results['header']['Severity'] = {}
+                self.results['header']['Total Scanned Packages'] = len(self.scanApplications)
+                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_product))
+		self.results['header']['Scanned Applications'] = ','.join(self.scanApplications)
+                self.results['header']['Severity']['Low'] = len(self.low)
+                self.results['header']['Severity']['High'] = len(self.hig)
+                self.results['header']['Severity']['Medium'] = len(self.med)
+                self.results['header']['Severity']['Critical'] = len(self.cri)
+	
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
                         json.dump(self.results, f)
 

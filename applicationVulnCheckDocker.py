@@ -69,28 +69,26 @@ class applicationVulnerabilities():
                         sys.exit(1)
 
 
-                self.results = {}
+		self.results = {}
                 self.results['header'] = {}
-		self.results['images'] = {}
-                self.results['header']['project'] = self.project
-                self.results['header']['project owner'] = owner
-                self.results['header']['repository'] = ''
-
-                self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
+                self.results['header']['Date'] = self.report_name
+                self.results['header']['Project'] = self.project
+                self.results['header']['Owner'] = owner
+                self.report_path = reportPath
+                self.results['header']['Target'] = self.target
 
-                self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = target
-
-                self.vuln_depe = []
                 self.vuln_found = []
-                self.testedWith = []
-                self.dependanciesCount = []
-		self.med = []
-                self.hig = []
+                self.scanApplications = []
+                self.vuln_product = []
+		self.namespace = []
+                self.imageName = []
+
+                self.med = []
                 self.low = []
-		self.critical = []
+                self.hig = []
+                self.cri = []
 
 
 	def gtEq(self, vers1, mVers):
@@ -163,7 +161,12 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+                                        self.vuln_product.append(product)
+
                                 if res not in self.results['images'][image]['Issues'][severity]:
+					self.vuln_found.append(product)
+
                                         self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -200,7 +203,11 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+                                        self.vuln_product.append(product)
+
                                 if res not in self.results['images'][image]['Issues'][severity]:
+					self.vuln_found.append(product)
                                         self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -237,7 +244,11 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+                                        self.vuln_product.append(product)
+
                                 if res not in self.results['images'][image]['Issues'][severity]:
+					self.vuln_found.append(product)
                                         self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -274,7 +285,11 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+                                        self.vuln_product.append(product)
+
                                 if res not in self.results['images'][image]['Issues'][severity]:
+					self.vuln_found.append(product)
                                         self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -311,7 +326,11 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+                                        self.vuln_product.append(product)
+
                                 if res not in self.results['images'][image]['Issues'][severity]:
+					self.vuln_found.append(product)
                                         self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -346,7 +365,11 @@ class applicationVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
 
+				if product not in self.vuln_product:
+                                        self.vuln_product.append(product)
+
                                 if res not in self.results['images'][image]['Issues'][severity]:
+					self.vuln_found.append(product)
                                         self.results['images'][image]['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -407,6 +430,8 @@ class applicationVulnerabilities():
 		resArray = []
                 for repo in output['repositories']:
                 	repoName = repo['repositoryName']
+			if repoName not in self.namespace:
+                                self.namespace.append(repoName)
                         cmd = 'aws ecr describe-images --repository-name %s' % repoName
                         status, output = commands.getstatusoutput(cmd)
                         output = json.loads(output)
@@ -415,6 +440,8 @@ class applicationVulnerabilities():
                                 	for tag in imgDetail['imageTags']:
                                                 tagName = tag
 						imageName = "%s/%s:%s" % (self.repoUrl, repoName, tagName)
+						if imageName not in self.imageName:
+                                                        self.imageName.append(imageName)
                                 		resArray.append(imageName)
 
          	return resArray
@@ -437,9 +464,13 @@ class applicationVulnerabilities():
 		resArray = []
                 for repo in output:
                 	namespace = repo.split("/")[0]
+			if namespace not in self.namespace:
+                                self.namespace.append(namespace)
                         image = repo.split("/")[1]
                         imgUrl = repo
 			imageName = "%s/%s/%s" % (self.repoUrl, namespace, image)
+			if imageName not in self.imageName:
+                                self.imageName.append(imageName)
 			resArray.append(imageName)
                         
 		return resArray
@@ -467,6 +498,8 @@ class applicationVulnerabilities():
 
                	resArray = []
                 for namespace in namespaces["namespaces"]:
+			if namespace not in self.namespace:
+                                self.namespace.append(namespace)
                 	response = requests.get('https://hub.docker.com/v2/repositories/%s/' % namespace, headers=headers, params=params)
                         imgNames = json.loads(response.text)
                         for img in imgNames['results']:
@@ -477,6 +510,8 @@ class applicationVulnerabilities():
                                 for tag in tagNames['results']:
                                         tagsName = tag['name']
 					imageName = "%s/%s:%s" % (namespace, imgName, tagsName)
+					if imageName not in self.imageName:
+                                                self.imageName.append(imageName)
                                 	resArray.append(imageName)	
 
 		return resArray
@@ -486,11 +521,14 @@ class applicationVulnerabilities():
                 client = docker.from_env()
                 images = client.images.list()
                 print images
+		self.namespace.append("local")
                 for image in images:
 			imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
 			print imageName
 			imgs = re.findall(r'\'(.*?)\'', str(imageName))
 			for img in imgs:
+				if img not in self.imageName:
+                                        self.imageName.append(img)
 				imagesArray.append(img)
 
 		return imagesArray
@@ -651,19 +689,24 @@ class applicationVulnerabilities():
 					print "[ OK ] Snyc Data...."
 					self.syncData(product)
 					print "%s - %s - %s" % (product, versions, image)
+					if product not in self.scanApplications:
+                                		self.scanApplications.append(product)
 					self.getVulnData(product, versions, image)
 
 		print "[ OK ] Scan completed"
+
+		self.results['header']['Severity'] = {}
+                self.results['header']['Total Scanned Packages'] = len(self.scanApplications)
+                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_product))
+                self.results['header']['Scanned Applications'] = ','.join(self.scanApplications)
+		self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
+                self.results['header']['Total Scanned Images'] = len(self.imageName)
+                self.results['header']['Severity']['Low'] = len(self.low)
+                self.results['header']['Severity']['High'] = len(self.hig)
+                self.results['header']['Severity']['Medium'] = len(self.med)
+                self.results['header']['Severity']['Critical'] = len(self.cri)
 	
-		self.results['header']['tested with'] = ','.join(self.testedWith)
-                self.results['header']['severity'] = {}
-                self.results['header']['dependancies'] = len(self.dependanciesCount)
-                self.results['header']['severity']['low'] = len(self.low)
-                self.results['header']['severity']['high'] = len(self.hig)
-                self.results['header']['severity']['medium'] = len(self.med)
-                self.results['header']['severity']['critical'] = len(self.critical)
-                self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-                self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
                         json.dump(self.results, f)

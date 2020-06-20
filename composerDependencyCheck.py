@@ -47,21 +47,16 @@ class getComposerVulnerabilities():
                         print "[ INFO ] Token invalid or expire, please login on portal and verify the TokenId"
                         sys.exit(1)
 
-
-
 		self.results = {}
                 self.results['header'] = {}
-                self.results['header']['project'] = self.project
-                self.results['header']['project owner'] = owner
-                path1=os.path.dirname(self.reportPath)
-                self.results['header']['repository'] = os.path.basename(path1)
-
-                self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
+                self.report_path = reportPath
 
-                self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = "source"
+                self.results['header']['Date'] = self.report_name
+                self.results['header']['Project'] = self.project
+                self.results['header']['Owner'] = owner
+                self.results['header']['Target'] = "source"
 
                 self.vuln_depe = []
                 self.vuln_found = []
@@ -146,6 +141,8 @@ class getComposerVulnerabilities():
                         severity = "High"
                 elif severity.lower() == "low":
                         severity = "Low"
+		elif severity.lower() == "critical":
+                        severity = "Critical"
 
 
 		for vers in versions.split(","):
@@ -180,6 +177,8 @@ class getComposerVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -216,6 +215,8 @@ class getComposerVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -253,6 +254,8 @@ class getComposerVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -289,6 +292,8 @@ class getComposerVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -325,6 +330,8 @@ class getComposerVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -359,6 +366,8 @@ class getComposerVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -545,24 +554,29 @@ class getComposerVulnerabilities():
 
 		self.results['Issues'] = {}
 		for filename in self.results['files']:
+			if filename not in self.testedWith:
+				self.testedWith.append(filename)
 			for d in self.results['files'][filename]:
 				print d
 				vendor = self.results['files'][filename][d]['vendor']
 				product = self.results['files'][filename][d]['product']
 				version = self.results['files'][filename][d]['version']
 				depend = self.results['files'][filename][d]['depend']
+				if product not in self.dependanciesCount:
+					self.dependanciesCount.append(product)
 				self.getVulnData(product, vendor, version[0], ','.join(depend))
 
 		print "[ OK ] Scanning Completed"
 
-		self.results['header']['tested with'] = ','.join(self.testedWith)
-		self.results['header']['severity'] = {}
-		self.results['header']['dependancies'] = len(self.dependanciesCount)
-		self.results['header']['severity']['low'] = len(self.low)
-		self.results['header']['severity']['high'] = len(self.hig)
-		self.results['header']['severity']['medium'] = len(self.med)
-		self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-		self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
+		self.results['header']['Tested With'] = ','.join(self.testedWith)
+                self.results['header']['Severity'] = {}
+                self.results['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
+                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
+                self.results['header']['Severity']['Low'] = len(self.low)
+                self.results['header']['Severity']['High'] = len(self.hig)
+                self.results['header']['Severity']['Medium'] = len(self.med)
+                self.results['header']['Severity']['Critical'] = len(self.cri)
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
 			json.dump(self.results, f)

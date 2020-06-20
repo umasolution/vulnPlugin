@@ -53,23 +53,19 @@ class platformVulnCheck():
 		
 		self.results = {}
                 self.results['header'] = {}
-                self.results['header']['project'] = self.project
-                self.results['header']['project owner'] = owner
-                path1=os.path.dirname(self.reportPath)
-                self.results['header']['repository'] = os.path.basename(path1)
-
-                self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
-
-                self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = targetFolder
+                self.results['header']['Date'] = self.report_name
+                self.results['header']['Project'] = self.project
+                self.results['header']['Owner'] = owner
+                self.report_path = reportPath
+                self.results['header']['Target'] = self.target
 
                 self.vuln_depe = []
                 self.vuln_found = []
-                self.testedWith = []
                 self.dependanciesCount = []
 		self.vuln_product = []
+
 		self.med = []
 		self.low = []
 		self.hig = []
@@ -321,20 +317,24 @@ class platformVulnCheck():
                                 else:
                                         platform = os_version
 
+				if product not in self.dependanciesCount:
+					self.dependanciesCount.append(product) 
+
                                 self.getVulnData(product, version, platform, os_name)
 
 
 		print "[ OK ] Scanning Completed"
-			
-		self.results['header']['tested with'] = ','.join(self.testedWith)
-                self.results['header']['severity'] = {}
-                self.results['header']['dependancies'] = len(self.dependanciesCount)
-                self.results['header']['severity']['low'] = len(self.low)
-                self.results['header']['severity']['high'] = len(self.hig)
-                self.results['header']['severity']['medium'] = len(self.med)
-                self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-                self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
 
+		self.results['header']['Tested With'] = ','.join(self.testedWith)
+                self.results['header']['Severity'] = {}
+                self.results['header']['Total Scanned Packages'] = len(self.dependanciesCount)
+                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_product))
+                self.results['header']['Severity']['Low'] = len(self.low)
+                self.results['header']['Severity']['High'] = len(self.hig)
+                self.results['header']['Severity']['Medium'] = len(self.med)
+                self.results['header']['Severity']['Critical'] = len(self.cri)
+			
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
 			json.dump(self.results, f)

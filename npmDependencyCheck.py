@@ -61,17 +61,15 @@ class getNpmVulnerabilities():
 
 		self.results = {}
 		self.results['header'] = {}
-		self.results['header']['project'] = self.project
-		self.results['header']['project owner'] = owner
-		path1=os.path.dirname(self.reportPath)
-		self.results['header']['repository'] = os.path.basename(path1)
-		
-		self.report_path = reportPath
 		now = datetime.now()
 		self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
+		self.report_path = reportPath
 
-		self.results['header']['date'] = self.report_name
-		self.results['header']['source type'] = "source"
+		self.results['header']['Date'] = self.report_name
+		self.results['header']['Project'] = self.project
+		self.results['header']['Owner'] = owner
+		self.results['header']['Target'] = "source"
+		
 
 		self.vuln_depe = []
 		self.vuln_found = []
@@ -147,6 +145,8 @@ class getNpmVulnerabilities():
 			severity = "High"
 		elif severity.lower() == "low":
 			severity = "Low"
+		elif severity.lower() == "critical":
+			severity = "Critical"
 
     		for vers in versions.split(","):
        		    if re.findall(r'\[.*:.*\]', str(vers)):
@@ -180,6 +180,8 @@ class getNpmVulnerabilities():
 				    		self.hig.append("High")
 			        	if severity.lower() == "low":
 				    		self.low.append("Low")
+					if severity.lower() == "critical":
+				    		self.cri.append("Critical")
 
 					self.vuln_found.append(product)
 					if product not in self.vuln_depe:
@@ -217,6 +219,8 @@ class getNpmVulnerabilities():
 				    		self.hig.append("High")
 			        	if severity.lower() == "low":
 				    		self.low.append("Low")
+					if severity.lower() == "critical":
+				    		self.cri.append("Critical")
 
 					self.vuln_found.append(product)
 					if product not in self.vuln_depe:
@@ -253,6 +257,8 @@ class getNpmVulnerabilities():
 				    		self.hig.append("High")
 			        	if severity.lower() == "low":
 				    		self.low.append("Low")
+					if severity.lower() == "critical":
+				    		self.cri.append("Critical")
 
 					self.vuln_found.append(product)
 					if product not in self.vuln_depe:
@@ -290,6 +296,8 @@ class getNpmVulnerabilities():
 				    		self.hig.append("High")
 			        	if severity.lower() == "low":
 				    		self.low.append("Low")
+					if severity.lower() == "critical":
+				    		self.cri.append("Critical")
 
 					self.vuln_found.append(product)
 					if product not in self.vuln_depe:
@@ -326,6 +334,8 @@ class getNpmVulnerabilities():
 				    		self.hig.append("High")
 			        	if severity.lower() == "low":
 				    		self.low.append("Low")
+					if severity.lower() == "critical":
+				    		self.cri.append("Critical")
 
 					self.vuln_found.append(product)
 					if product not in self.vuln_depe:
@@ -360,6 +370,8 @@ class getNpmVulnerabilities():
 				    		self.hig.append("High")
 			        	if severity.lower() == "low":
 				    		self.low.append("Low")
+					if severity.lower() == "critical":
+				    		self.cri.append("Critical")
 
 					self.vuln_found.append(product)
 					if product not in self.vuln_depe:
@@ -603,6 +615,7 @@ class getNpmVulnerabilities():
 		self.med = []
 		self.hig = []
 		self.low = []
+		self.cri = []
 
 		print "[ OK ] Database sync started"
 		self.syncData(self.packageLists)
@@ -613,20 +626,24 @@ class getNpmVulnerabilities():
 		self.results['Issues'] = {}
 		if 'files' in output:
 		    for filename in output['files']:
+			if filename not in self.testedWith:
+				self.testedWith.append(filename)
 		        for file in output['files'][filename]:
 		            if 'lock' not in output['files'][filename][file]:
 				if 'devDependencies' in output['files'][filename][file]:
 	   	    	            for d in output[filename][file]['devDependencies']:
 				    	product = d['product']
 				    	version = d['version']
-				    	self.dependanciesCount.append(product)
+					if product not in self.dependanciesCount:
+				    		self.dependanciesCount.append(product)
 				    	self.getVulnData(product, version, filename, '')
 
 				if 'dependencies' in output['files'][filename][file]:
 		    	            for d in output['files'][filename][file]['dependencies']:
 				    	product = d['product']
 				    	version = d['version']
-				    	self.dependanciesCount.append(product)
+					if product not in self.dependanciesCount:
+				    		self.dependanciesCount.append(product)
 				    	self.getVulnData(product, version, filename, '')
 
 		    	    if 'lock' in output['files'][filename][file]:
@@ -639,21 +656,23 @@ class getNpmVulnerabilities():
 					    product = d
 					    version = output['files'][filename][file][d]["version"]
 
-				        self.dependanciesCount.append(product)
+					if product not in self.dependanciesCount:
+				        	self.dependanciesCount.append(product)
 			    	        dependancyDetails = output['files'][filename][file][d]['depend']
 			    	        self.getVulnData(product, version, filename, dependancyDetails)
 
 
 		print "[ OK ] Scanning Completed"
 			
-		self.results['header']['tested with'] = ','.join(self.testedWith)
-		self.results['header']['severity'] = {}
-		self.results['header']['dependancies'] = len(self.dependanciesCount)
-		self.results['header']['severity']['low'] = len(self.low)
-		self.results['header']['severity']['high'] = len(self.hig)
-		self.results['header']['severity']['medium'] = len(self.med)
-		self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-		self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
+		self.results['header']['Tested With'] = ','.join(self.testedWith)
+		self.results['header']['Severity'] = {}
+		self.results['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
+		self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+		self.results['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
+		self.results['header']['Severity']['Low'] = len(self.low)
+		self.results['header']['Severity']['High'] = len(self.hig)
+		self.results['header']['Severity']['Medium'] = len(self.med)
+		self.results['header']['Severity']['Critical'] = len(self.cri)
 
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:

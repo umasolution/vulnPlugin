@@ -57,25 +57,23 @@ class getPipVulnerabilities():
                         print "[ INFO ] Token invalid or expire, please login on portal and verify the TokenId"
                         sys.exit(1)
 
-
-                self.results = {}
-		self.results['images'] = {}
+		self.results = {}
+                self.results['images'] = {}
                 self.results['header'] = {}
-                self.results['header']['project'] = self.project
-                self.results['header']['project owner'] = owner
-                path1=os.path.dirname(self.reportPath)
-                self.results['header']['repository'] = os.path.basename(path1)
-
-                self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
+                self.report_path = reportPath
 
-                self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = "source"
+                self.results['header']['Date'] = self.report_name
+                self.results['header']['Project'] = self.project
+                self.results['header']['Owner'] = owner
+                self.results['header']['Target'] = self.target
 
                 self.vuln_depe = []
                 self.vuln_found = []
                 self.testedWith = []
+                self.namespace = []
+                self.imageName = []
                 self.dependanciesCount = []
 
 
@@ -140,6 +138,8 @@ class getPipVulnerabilities():
                         severity = "High"
                 elif severity.lower() == "low":
                         severity = "Low"
+		elif severity.lower() == "critical":
+                        severity = "Critical"
 
                 for vers in versions.split(","):
                     if re.findall(r'\[.*:.*\]', str(vers)):
@@ -172,6 +172,8 @@ class getPipVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -207,6 +209,8 @@ class getPipVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -242,6 +246,8 @@ class getPipVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -277,6 +283,8 @@ class getPipVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -312,6 +320,8 @@ class getPipVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -345,6 +355,8 @@ class getPipVulnerabilities():
                                                 self.hig.append("High")
                                         if severity.lower() == "low":
                                                 self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("critical")
 
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
@@ -501,6 +513,8 @@ class getPipVulnerabilities():
                 resArray = []
                 for repo in output['repositories']:
                         repoName = repo['repositoryName']
+			if repoName not in self.namespace:
+                                self.namespace.append(repoName)
                         cmd = 'aws ecr describe-images --repository-name %s' % repoName
                         status, output = commands.getstatusoutput(cmd)
                         output = json.loads(output)
@@ -509,6 +523,8 @@ class getPipVulnerabilities():
                                         for tag in imgDetail['imageTags']:
                                                 tagName = tag
                                                 imageName = "%s/%s:%s" % (self.repoUrl, repoName, tagName)
+						if imageName not in self.imageName:
+                                                        self.imageName.append(imageName)
                                                 resArray.append(imageName)
 
                 return resArray
@@ -531,9 +547,13 @@ class getPipVulnerabilities():
                 resArray = []
                 for repo in output:
                         namespace = repo.split("/")[0]
+			if namespace not in self.namespace:
+                                self.namespace.append(namespace)
                         image = repo.split("/")[1]
                         imgUrl = repo
                         imageName = "%s/%s/%s" % (self.repoUrl, namespace, image)
+			if imageName not in self.imageName:
+                                self.imageName.append(imageName)
                         resArray.append(imageName)
 
                 return resArray
@@ -562,6 +582,8 @@ class getPipVulnerabilities():
 
                 resArray = []
                 for namespace in namespaces["namespaces"]:
+			if namespace not in self.namespace:
+                                self.namespace.append(namespace)
                         response = requests.get('https://hub.docker.com/v2/repositories/%s/' % namespace, headers=headers, params=params)
                         imgNames = json.loads(response.text)
                         for img in imgNames['results']:
@@ -572,6 +594,8 @@ class getPipVulnerabilities():
                                 for tag in tagNames['results']:
                                         tagsName = tag['name']
                                         imageName = "%s/%s:%s" % (namespace, imgName, tagsName)
+					if imageName not in self.imageName:
+                                                self.imageName.append(imageName)
                                         resArray.append(imageName)
 
                 return resArray
@@ -581,12 +605,15 @@ class getPipVulnerabilities():
                 imagesArray = []
                 client = docker.from_env()
                 images = client.images.list()
+		self.namespace.append("local")
                 print images
                 for image in images:
                         imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
                         print imageName
                         imgs = re.findall(r'\'(.*?)\'', str(imageName))
                         for img in imgs:
+				if img not in self.imageName:
+                                        self.imageName.append(img)
                                 imagesArray.append(img)
 
                 return imagesArray
@@ -691,6 +718,7 @@ class getPipVulnerabilities():
 		self.med = []
                 self.hig = []
                 self.low = []
+		self.cri = []
 		output = self.genPkgVer()
 		print "[ OK ] Snyc Data...."
 		self.syncData(self.resultsPackage)
@@ -704,22 +732,30 @@ class getPipVulnerabilities():
 
 			if 'files' in output['images'][image]:
 				for filename in output['images'][image]['files']:
+					if filename not in self.testedWith:
+						self.testedWith.append(filename)
 					for result in output['images'][image]['files'][filename]['packages']:
 						product = result['product']
 						versions = result['versions']
 						print "%s - %s" % (product, versions)
+						if product not in self.dependanciesCount:
+							self.dependanciesCount.append(product)
 						self.getVulnData(product, versions, filename, image)
 
 		print "[ OK ] Scan completed"
-	
-		self.results['header']['tested with'] = ','.join(self.testedWith)
-                self.results['header']['severity'] = {}
-                self.results['header']['dependancies'] = len(self.dependanciesCount)
-                self.results['header']['severity']['low'] = len(self.low)
-                self.results['header']['severity']['high'] = len(self.hig)
-                self.results['header']['severity']['medium'] = len(self.med)
-                self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-                self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
+
+
+		self.results['header']['Tested With'] = ','.join(self.testedWith)
+                self.results['header']['Severity'] = {}
+                self.results['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
+                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
+                self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
+                self.results['header']['Total Scanned Images'] = len(self.imageName)
+                self.results['header']['Severity']['Low'] = len(self.low)
+                self.results['header']['Severity']['High'] = len(self.hig)
+                self.results['header']['Severity']['Medium'] = len(self.med)
+                self.results['header']['Severity']['Critical'] = len(self.cri)
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
                         json.dump(self.results, f)

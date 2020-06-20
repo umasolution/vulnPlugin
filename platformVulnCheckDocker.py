@@ -63,22 +63,22 @@ class platformVulnCheckDocker():
 		
 		self.results = {}
                 self.results['header'] = {}
-                self.results['header']['project'] = self.project
-                self.results['header']['project owner'] = owner
-                self.results['header']['repository'] = ''
-
-                self.report_path = reportPath
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
-
-                self.results['header']['date'] = self.report_name
-                self.results['header']['source type'] = target
+                self.results['header']['Date'] = self.report_name
+                self.results['header']['Project'] = self.project
+                self.results['header']['Owner'] = owner
+                self.report_path = reportPath
+                self.results['header']['Target'] = self.target
+		
 
                 self.vuln_depe = []
                 self.vuln_found = []
                 self.testedWith = []
                 self.dependanciesCount = []
 		self.vuln_product = []
+		self.namespace = []
+                self.imageName = []
 		self.med = []
 		self.low = []
 		self.hig = []
@@ -294,11 +294,14 @@ class platformVulnCheckDocker():
                 p = 0
                 client = docker.from_env()
 		images = client.images.list()
+		self.namespace.append('local')
 
 		for image in images:
 		    imgs = re.findall(r'<Image: (\'.*\')>', str(image))[0]
 		    imageNames = re.findall(r'\'(.*?)\'', str(imgs))
 		    for imageName in imageNames:
+			if imageName not in self.imageName:
+				self.imageName.append(imageName)
                         cmd = 'docker run --rm -i -t %s /bin/sh -c "cat /etc/os-release;"' % (imageName)
                        	status, output = commands.getstatusoutput(cmd)
                         data = output
@@ -360,8 +363,12 @@ class platformVulnCheckDocker():
                 imageJson = self.getAZImageJson(authUser, authPass, target)
                 for imgArray in imageJson:
                         	namespace = imgArray['namespace']
+				if namespace not in self.namespace:
+					self.namespace.append(namespace)
                                 tagName = imgArray['image']
                                 imageName = "%s/%s/%s" % (self.repoUrl, namespace, tagName)
+				if imageName not in self.imageName:
+					self.imageName.append(imageName)
                                 image = client.images.pull("%s" % (imageName))
 
                                 cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release"' % (imageName)
@@ -432,9 +439,13 @@ class platformVulnCheckDocker():
                 imageJson = self.getAWSImageJson(authUser, authPass, target)
                 for imgArray in imageJson:
 			namespace = imgArray['namespace']
+			if namespace not in self.namespace:
+				self.namespace.append(namespace)
                         for tag in imgArray['tags']:
 				tagName = tag
 				imageName = "%s/%s:%s" % (self.repoUrl, namespace, tagName)
+				if imageName not in self.imageName:
+					self.imageName.append(imageName)
                                 image = client.images.pull("%s" % (imageName))
 
                                 cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release"' % (imageName)
@@ -502,9 +513,13 @@ class platformVulnCheckDocker():
 
                 for imgArray in imageJson:
 			namespace = imgArray['namespace']
+			if namespace not in self.namespace:
+				self.namespace.append(imagespace)
                         imgName = imgArray['image']
                         for tag in imgArray['tags']:
                                 imageName = "%s/%s:%s" % (namespace, imgName, tag)
+				if imageName not in self.imageName:
+					self.imageName.append(imageName)
                                 image = client.images.pull("%s" % (imageName))
 
                                 cmd = 'docker run --rm -i -t %s /bin/bash -c "cat /etc/os-release"' % (imageName)
@@ -625,20 +640,25 @@ class platformVulnCheckDocker():
 					platform = os_type
 				else:
 					platform = os_version
+
+				if product not in self.dependanciesCount:
+					self.dependanciesCount.append(product)
 				
 			    	self.getVulnData(product, version, platform, os_name, image)
 
 		print "[ OK ] Scanning Completed"
-			
-		self.results['header']['tested with'] = ','.join(self.testedWith)
-                self.results['header']['severity'] = {}
-                self.results['header']['dependancies'] = len(self.dependanciesCount)
-                self.results['header']['severity']['low'] = len(self.low)
-                self.results['header']['severity']['high'] = len(self.hig)
-                self.results['header']['severity']['medium'] = len(self.med)
-                self.results['header']['vulnerabilities found'] = len(self.vuln_found)
-                self.results['header']['vulnerable dependencies'] = len(self.getUnique(self.vuln_depe))
 
+                self.results['header']['Severity'] = {}
+                self.results['header']['Total Scanned Packages'] = len(self.dependanciesCount)
+                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_depe))
+                self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
+                self.results['header']['Total Scanned Images'] = len(self.imageName)
+                self.results['header']['Severity']['Low'] = len(self.low)
+                self.results['header']['Severity']['High'] = len(self.hig)
+                self.results['header']['Severity']['Medium'] = len(self.med)
+                self.results['header']['Severity']['Critical'] = len(self.cri)
+			
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
 			json.dump(self.results, f)
@@ -697,7 +717,7 @@ if __name__ == "__main__":
 
 	parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
 	parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-	parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws', required=True, default='local')
+	parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws/azure', required=True, default='local')
 	parser.add_argument('-repo', '--reponame', type=str,  help='Enter repository name', default='*')
 	parser.add_argument('-image', '--imagename', type=str,  help='Enter Image name', default='*')
 	parser.add_argument('-tags', '--imagetags', type=str,  help='Enter Image tags', default='*')
