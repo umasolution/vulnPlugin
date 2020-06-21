@@ -40,6 +40,17 @@ class applicationVulnerabilities():
                         print "[ INFO ] server configuration json file not found in current directory"
                         sys.exit(1)
 
+		if target == "azure":
+		    status, output = commands.getstatusoutput('which az')
+		    if len(output) == 0:
+			print "[ OK ] az tool is not installed! installation guide : https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest"
+			sys.exit(1)
+
+		if target == "aws":
+		    status, output = commands.getstatusoutput('which aws')
+		    if len(output) == 0:
+			print "[ OK ] aws tool is not installed! installation guide : https://aws.amazon.com/cli/"
+			sys.exit(1)
 
                 with open('server.config') as f:
                         configData = json.load(f)
@@ -71,6 +82,7 @@ class applicationVulnerabilities():
 
 		self.results = {}
                 self.results['header'] = {}
+		self.results['images'] = {}
                 now = datetime.now()
                 self.report_name = now.strftime("%d-%m-%Y_%H:%M:%S")
                 self.results['header']['Date'] = self.report_name
@@ -520,11 +532,9 @@ class applicationVulnerabilities():
 		imagesArray = []
                 client = docker.from_env()
                 images = client.images.list()
-                print images
 		self.namespace.append("local")
                 for image in images:
 			imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
-			print imageName
 			imgs = re.findall(r'\'(.*?)\'', str(imageName))
 			for img in imgs:
 				if img not in self.imageName:
@@ -536,7 +546,6 @@ class applicationVulnerabilities():
 
 	def getimagepkgVer(self, images):
 		resJson = self.getConfig()
-		print images
                 for image in images:
                         imageName = image
 			if "/" in imageName:
@@ -546,40 +555,28 @@ class applicationVulnerabilities():
 				container_name = imageName.replace(":", "_")
 
                         cmd = 'docker run --name %s -it -d %s' % (container_name, imageName)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'docker export %s > /tmp/%s.tar' % (container_name, container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'docker rm --force %s' % (container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
 			cmd = 'mkdir /tmp/%s' % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
 			cmd = 'sudo tar -xf /tmp/%s.tar -C /tmp/%s/' % (container_name, container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
 			cmd = 'cat /tmp/%s/etc/os-release' % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 			
                         os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
@@ -599,10 +596,8 @@ class applicationVulnerabilities():
 			self.getImageDetails(resJson, imageName, container_name)
 
 			cmd = "rm -rf /tmp/%s*" % container_name
-                        print cmd
-                        #status, output = commands.getstatusoutput(cmd)
-                        #data = output
-                        #print data
+                        status, output = commands.getstatusoutput(cmd)
+                        data = output
 
 
 	def getImageDetails(self, resJson, imageName, container_name):
@@ -614,8 +609,7 @@ class applicationVulnerabilities():
 				file_regex = app1["file_regex"]
 				content_version_regex = app1["content_version_regex"]
 				content_product_regex = app1["content_product_regex"]
-				print location
-				print file_regex
+
 
 				location = location.encode('utf-8')
 				file_regex = file_regex.encode('utf-8')
@@ -631,7 +625,6 @@ class applicationVulnerabilities():
                 				product = re.findall(r'%s' % content_product_regex, str(fData))[0]
 
         				if product and version:
-                				print "%s - %s - %s" % (product, version, filename)
 						res['product'] = product
 						res['version'] = version
 						res['filename'] = filename
@@ -676,8 +669,6 @@ class applicationVulnerabilities():
 	def scanPackage(self):
 		print "[ OK ] Preparing..."
 		self.genPkgVer()
-		print self.results
-		print "=============="
 		print "[ OK ] Scan started"
 
 		for image in self.results['images']:
@@ -685,10 +676,10 @@ class applicationVulnerabilities():
 			for app in self.results['images'][image]['applications']:
 		    		for app1 in self.results['images'][image]['applications'][app]:
 					product = app1['product']
+					product = product.lower()
 					versions = app1['version']
 					print "[ OK ] Snyc Data...."
 					self.syncData(product)
-					print "%s - %s - %s" % (product, versions, image)
 					if product not in self.scanApplications:
                                 		self.scanApplications.append(product)
 					self.getVulnData(product, versions, image)
@@ -726,8 +717,7 @@ class applicationVulnerabilities():
 
 		
 	def syncData(self, product):
-            	#try:
-
+            try:
                 url = "%s://%s:%s/api/vulnapp/%s" % (self.protocol, self.server, self.port, product)
                 headers = {
                         'Authorization': 'Basic QWRtaW5pc3RyYXRvcjpWZXJzYUAxMjM=',
@@ -737,10 +727,9 @@ class applicationVulnerabilities():
                 response = requests.request("GET", url, headers=headers)
                 responseData = response.json()
                 self.responseData = responseData
-		print self.responseData
-            	#except:
-                #print "[ OK ] Database sync error! Check internet connectivity"
-                #sys.exit(1)
+            except:
+                print "[ OK ] Database sync error! Check internet connectivity"
+                sys.exit(1)
 
 
 	def query_yes_no(self, question, default="yes"):
@@ -771,7 +760,7 @@ if __name__ == "__main__":
         parser = argparse.ArgumentParser()
 	parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
         parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws', required=True, default='local')
+        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws/azure', required=True, default='local')
         parser.add_argument('-repo', '--reponame', type=str,  help='Enter repository name', default='*')
         parser.add_argument('-image', '--imagename', type=str,  help='Enter Image name', default='*')
         parser.add_argument('-tags', '--imagetags', type=str,  help='Enter Image tags', default='*')

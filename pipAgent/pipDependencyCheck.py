@@ -118,8 +118,6 @@ class getPipVulnerabilities():
 		else:
 			mVer = mVers
 
-		print "Match %s - %s - %s" % (mVer, product, versions)
-
                 if not severity:
                         severity = "Medium"
                 if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -420,7 +418,6 @@ class getPipVulnerabilities():
 							res['versions'] = versions.replace(" ", "")
 							self.results['files'][filename]['packages'].append(res)
 							resultsPackage.append(product.strip())
-							print "%s - %s" % (product.strip(), versions.replace(" ", ""))
 
 		return resultsPackage
 
@@ -498,7 +495,6 @@ class getPipVulnerabilities():
 		print "[ OK ] Snyc Data...."
 		self.syncData(packageLists)
 		print "[ OK ] Preparing..."
-		print self.results
 
 		self.results['Issues'] = {}
 
@@ -510,7 +506,6 @@ class getPipVulnerabilities():
 				product = result['product']
 				versions = result['versions']
 
-				print "%s - %s" % (product, versions)
 				if product not in self.dependanciesCount:
 					self.dependanciesCount.append(product)
 
@@ -557,7 +552,6 @@ class getPipVulnerabilities():
                 response = requests.request("POST", url, headers=headers, data = payload)
                 responseData = response.json()
                 self.responseData = responseData
-		print self.responseData
             except:
                 print "[ OK ] Database sync error! Check internet connectivity"
                 sys.exit(1)

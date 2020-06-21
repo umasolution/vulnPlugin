@@ -36,6 +36,18 @@ class getNpmVulnerabilities():
 			print "[ INFO ] server configuration json file not found in current directory"
 			sys.exit(1)
 
+		if target == "azure":
+                    status, output = commands.getstatusoutput('which az')
+                    if len(output) == 0:
+                        print "[ OK ] az tool is not installed! installation guide : https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest"
+                        sys.exit(1)
+
+                if target == "aws":
+                    status, output = commands.getstatusoutput('which aws')
+                    if len(output) == 0:
+                        print "[ OK ] aws tool is not installed! installation guide : https://aws.amazon.com/cli/"
+                        sys.exit(1)
+
 
 		with open('server.config') as f:
 			configData = json.load(f)
@@ -379,7 +391,6 @@ class getNpmVulnerabilities():
 
 
 	def getVulnData(self, product, mVersions, filename, image, dependancy):
-		print "%s - %s - %s - %s" % (product, mVersions, filename, dependancy)
 		if product in self.responseData["results"]:
 		    for productName in self.responseData["results"][product]:
                         cve_id = productName['cve_id']
@@ -599,11 +610,9 @@ class getNpmVulnerabilities():
                 imagesArray = []
                 client = docker.from_env()
                 images = client.images.list()
-                print images
 		self.namespace.append("local")
                 for image in images:
                         imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
-                        print imageName
                         imgs = re.findall(r'\'(.*?)\'', str(imageName))
                         for img in imgs:
 				if img not in self.imageName:
@@ -626,40 +635,28 @@ class getNpmVulnerabilities():
                                 container_name = imageName.replace(":", "_")
 
                         cmd = 'docker run --name %s -it -d %s' % (container_name, imageName)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'docker export %s > /tmp/%s.tar' % (container_name, container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'docker rm --force %s' % (container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'mkdir /tmp/%s' % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'sudo tar -xf /tmp/%s.tar -C /tmp/%s/' % (container_name, container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'cat /tmp/%s/etc/os-release' % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
@@ -679,10 +676,8 @@ class getNpmVulnerabilities():
 			self.getInstallPkgList("/tmp/%s" % container_name, imageName)
 
                         cmd = "rm -rf /tmp/%s*" % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
 		return self.resultsPkg
 
@@ -824,7 +819,6 @@ class getNpmVulnerabilities():
 	def scanNpmPackage(self):
 		print "[ OK ] Preparing..."
 		output = self.genPkgVer()
-		print output
 		self.med = []
 		self.hig = []
 		self.low = []

@@ -38,6 +38,18 @@ class getPipVulnerabilities():
                         print "[ INFO ] server configuration json file not found in current directory"
                         sys.exit(1)
 
+		if target == "azure":
+                    status, output = commands.getstatusoutput('which az')
+                    if len(output) == 0:
+                        print "[ OK ] az tool is not installed! installation guide : https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest"
+                        sys.exit(1)
+
+                if target == "aws":
+                    status, output = commands.getstatusoutput('which aws')
+                    if len(output) == 0:
+                        print "[ OK ] aws tool is not installed! installation guide : https://aws.amazon.com/cli/"
+                        sys.exit(1)
+
 
                 with open('server.config') as f:
                         configData = json.load(f)
@@ -128,7 +140,6 @@ class getPipVulnerabilities():
 		"""
 		mVer = self.checkSemantic(product, mVers.strip())
 
-		print "Match %s - %s - %s" % (mVer, product, versions)
 
                 if not severity:
                         severity = "Medium"
@@ -430,7 +441,6 @@ class getPipVulnerabilities():
 						res['versions'] = versions.replace(" ", "")
 						self.resultsPkg['images'][image]['files'][filename]['packages'].append(res)
 						self.resultsPackage.append(product.strip())
-						print "%s - %s" % (product.strip(), versions.replace(" ", ""))
 
 
 	def maxValue(self, mVersions):
@@ -606,10 +616,8 @@ class getPipVulnerabilities():
                 client = docker.from_env()
                 images = client.images.list()
 		self.namespace.append("local")
-                print images
                 for image in images:
                         imageName = re.findall(r'<Image: (\'.*\')>', str(image))[0]
-                        print imageName
                         imgs = re.findall(r'\'(.*?)\'', str(imageName))
                         for img in imgs:
 				if img not in self.imageName:
@@ -633,40 +641,28 @@ class getPipVulnerabilities():
                                 container_name = imageName.replace(":", "_")
 
                         cmd = 'docker run --name %s -it -d %s' % (container_name, imageName)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'docker export %s > /tmp/%s.tar' % (container_name, container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'docker rm --force %s' % (container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'mkdir /tmp/%s' % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'sudo tar -xf /tmp/%s.tar -C /tmp/%s/' % (container_name, container_name)
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         cmd = 'cat /tmp/%s/etc/os-release' % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                         os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
@@ -686,10 +682,8 @@ class getPipVulnerabilities():
                         self.getInstallPkgList("/tmp/%s" % container_name, imageName)
 
                         cmd = "rm -rf /tmp/%s*" % container_name
-                        print cmd
                         status, output = commands.getstatusoutput(cmd)
                         data = output
-                        print data
 
                 return self.resultsPkg
 
@@ -737,7 +731,6 @@ class getPipVulnerabilities():
 					for result in output['images'][image]['files'][filename]['packages']:
 						product = result['product']
 						versions = result['versions']
-						print "%s - %s" % (product, versions)
 						if product not in self.dependanciesCount:
 							self.dependanciesCount.append(product)
 						self.getVulnData(product, versions, filename, image)
@@ -786,7 +779,6 @@ class getPipVulnerabilities():
                 response = requests.request("POST", url, headers=headers, data = payload)
                 responseData = response.json()
                 self.responseData = responseData
-		print self.responseData
             except:
                 print "[ OK ] Database sync error! Check internet connectivity"
                 sys.exit(1)

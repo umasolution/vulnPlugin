@@ -33,6 +33,18 @@ class platformVulnCheckDocker():
 			print "[ INFO ] server configuration json file not found in current directory"
 			sys.exit(1)
 
+		if target == "azure":
+                    status, output = commands.getstatusoutput('which az')
+                    if len(output) == 0:
+                        print "[ OK ] az tool is not installed! installation guide : https://docs.microsoft.com/en-us/cli/azure/install-azure-cli?view=azure-cli-latest"
+                        sys.exit(1)
+
+                if target == "aws":
+                    status, output = commands.getstatusoutput('which aws')
+                    if len(output) == 0:
+                        print "[ OK ] aws tool is not installed! installation guide : https://aws.amazon.com/cli/"
+                        sys.exit(1)
+
 
 		with open('server.config') as f:
 			configData = json.load(f)
@@ -74,7 +86,6 @@ class platformVulnCheckDocker():
 
                 self.vuln_depe = []
                 self.vuln_found = []
-                self.testedWith = []
                 self.dependanciesCount = []
 		self.vuln_product = []
 		self.namespace = []
@@ -300,36 +311,37 @@ class platformVulnCheckDocker():
 		    imgs = re.findall(r'<Image: (\'.*\')>', str(image))[0]
 		    imageNames = re.findall(r'\'(.*?)\'', str(imgs))
 		    for imageName in imageNames:
-			if imageName not in self.imageName:
+			try:
+			    if imageName not in self.imageName:
 				self.imageName.append(imageName)
-                        cmd = 'docker run --rm -i -t %s /bin/sh -c "cat /etc/os-release;"' % (imageName)
-                       	status, output = commands.getstatusoutput(cmd)
-                        data = output
+                            cmd = 'docker run --rm -i -t %s /bin/sh -c "cat /etc/os-release;"' % (imageName)
+                       	    status, output = commands.getstatusoutput(cmd)
+                            data = output
 
-                        os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
-                        os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
-                        if os_name.strip() == "debian":
+                            os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                            os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
+                            if os_name.strip() == "debian":
                         	os_type = re.findall(r'^VERSION=\"\d+\s+\((.*)\)\"', str(data), flags=re.MULTILINE)[0]
-                        elif  os_name.strip() == "ubuntu":
+                            elif  os_name.strip() == "ubuntu":
 				os_type = re.findall(r'PRETTY_NAME=\"(.*)\"', str(data), flags=re.MULTILINE)[0]
-			else:
+			    else:
 				os_type = ''
 
-                        imageName = str(imageName)
-                        results[imageName] = {}
-                        results[imageName]['os_name'] = str(os_name.strip())
-                        results[imageName]['os_version'] = str(os_version.replace('"', '').strip())
-                        results[imageName]['os_type'] = str(os_type.strip())
+                            imageName = str(imageName)
+                            results[imageName] = {}
+                            results[imageName]['os_name'] = str(os_name.strip())
+                            results[imageName]['os_version'] = str(os_version.replace('"', '').strip())
+                            results[imageName]['os_type'] = str(os_type.strip())
 
-			if os_name not in self.packageLists:
+			    if os_name not in self.packageLists:
 				os_name = os_name.strip()
 				self.packageLists[os_name] = {}
 				self.packageLists[os_name]['os_type'] = os_type.strip()
 				self.packageLists[os_name]['os_version'] = str(os_version.replace('"', '').strip())
 
-                        results[imageName]['pkgDetails'] = []
+                            results[imageName]['pkgDetails'] = []
 
-			if os_name.strip() == "debian" or os_name.strip() == "ubuntu":
+			    if os_name.strip() == "debian" or os_name.strip() == "ubuntu":
                         	cmd = 'docker run --rm -i -t %s /bin/sh -c "dpkg -la > t; cat t"' % (imageName)
                        		status, output = commands.getstatusoutput(cmd)
                         	data = output
@@ -345,6 +357,8 @@ class platformVulnCheckDocker():
                                         archPkg = pkg[2]
                                         res['archPkg'] = str(archPkg)
                                         results[imageName]['pkgDetails'].append(res)
+			except:
+				pass
 
 		return results
 
@@ -610,9 +624,8 @@ class platformVulnCheckDocker():
 		self.results['packages'] = output
 
 		for image in output:
+		    print "[ OK ] %s image scanning started" % image
 		    if len(output[image]['pkgDetails']) > 0:
-			print image
-
 			os_name = output[image]['os_name']
 			os_version = output[image]['os_version']
 			os_type = output[image]['os_type']
@@ -625,9 +638,7 @@ class platformVulnCheckDocker():
 				self.results['Issues'][image]['Issues'] = {}
 			
 
-			print "[ OK ] Database sync started"
 			self.syncData(os_name)
-			print "[ OK ] Database sync comleted"
 
 			for pkg in output[image]['pkgDetails']:
 				arch = pkg['archPkg']
@@ -645,6 +656,8 @@ class platformVulnCheckDocker():
 					self.dependanciesCount.append(product)
 				
 			    	self.getVulnData(product, version, platform, os_name, image)
+
+		    print "[ OK ] %s image scanning completed" % image
 
 		print "[ OK ] Scanning Completed"
 
@@ -790,8 +803,8 @@ modified versions of the software inside them, although the m
 Do you want to accept ?
         """
 
+	res = platformVulnCheckDocker(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner)
 	if res.query_yes_no(data):
-		res = platformVulnCheckDocker(results.reportPath, results.projectname, results.target, results.reponame, results.imagename, results.imagetags, owner)
 		res.scanPlatformPackage()
 	else:
 		sys.exit(1)

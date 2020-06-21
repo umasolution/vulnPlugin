@@ -379,7 +379,6 @@ class getNpmVulnerabilities():
 
 
 	def getVulnData(self, product, mVersions, filename, dependancy):
-		print "%s - %s - %s - %s" % (product, mVersions, filename, dependancy)
 		if product in self.responseData["results"]:
 		    for productName in self.responseData["results"][product]:
                         cve_id = productName['cve_id']

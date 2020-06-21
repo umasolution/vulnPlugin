@@ -421,8 +421,6 @@ class applicationVulnerabilities():
 				file_regex = app1["file_regex"]
 				content_version_regex = app1["content_version_regex"]
 				content_product_regex = app1["content_product_regex"]
-				print location
-				print file_regex
 
 				location = location.encode('utf-8')
 				file_regex = file_regex.encode('utf-8')
@@ -438,7 +436,6 @@ class applicationVulnerabilities():
                 				product = re.findall(r'%s' % content_product_regex, str(fData))[0]
 
         				if product and version:
-                				print "%s - %s - %s" % (product, version, filename)
 						res['product'] = product
 						res['version'] = version
 						res['filename'] = filename
@@ -472,10 +469,7 @@ class applicationVulnerabilities():
 		self.cri = []
 
 		packageLists = self.getInstallPkgList()
-		print packageLists
-		print self.results
 		print "[ OK ] Preparing..."
-		print self.results
 
 		self.results['Issues'] = {}
 
@@ -486,7 +480,6 @@ class applicationVulnerabilities():
 			versions = app1['version']
 			print "[ OK ] Snyc Data...."
 			self.syncData(product)
-			print "%s - %s" % (product, versions)
 			if product not in self.scanApplications:
 				self.scanApplications.append(product)
 
@@ -522,7 +515,7 @@ class applicationVulnerabilities():
 
 		
 	def syncData(self, product):
-            	#try:
+            try:
 
                 url = "%s://%s:%s/api/vulnapp/%s" % (self.protocol, self.server, self.port, product)
                 headers = {
@@ -533,10 +526,9 @@ class applicationVulnerabilities():
                 response = requests.request("GET", url, headers=headers)
                 responseData = response.json()
                 self.responseData = responseData
-		print self.responseData
-            	#except:
-                #print "[ OK ] Database sync error! Check internet connectivity"
-                #sys.exit(1)
+            except:
+                print "[ OK ] Database sync error! Check internet connectivity"
+                sys.exit(1)
 
 
 	def query_yes_no(self, question, default="yes"):
