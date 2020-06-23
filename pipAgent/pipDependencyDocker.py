@@ -59,6 +59,14 @@ class getPipVulnerabilities():
                 self.port = configData['port']
                 self.protocol = configData['protocol']
 
+		if target != "local":
+                        self.username = configData[target]['uid']
+                        self.password = configData[target]['secret']
+                        self.repoUrl = configData[target]['url']
+                        if not self.username and not self.password:
+                                print "[ INFO ] %s Credential not configured in server.config file" % target
+                                sys.exit(1)
+
                 url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
                 response = requests.request("GET", url)
                 tokenData = response.text
