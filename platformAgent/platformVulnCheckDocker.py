@@ -528,7 +528,7 @@ class platformVulnCheckDocker():
                 for imgArray in imageJson:
 			namespace = imgArray['namespace']
 			if namespace not in self.namespace:
-				self.namespace.append(imagespace)
+				self.namespace.append(namespace)
                         imgName = imgArray['image']
                         for tag in imgArray['tags']:
                                 imageName = "%s/%s:%s" % (namespace, imgName, tag)
