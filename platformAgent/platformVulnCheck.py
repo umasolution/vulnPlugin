@@ -238,6 +238,7 @@ class platformVulnCheck():
 		if self.target.lower() == "remote":
 			cmd = "cat /etc/os-release"
 			output = self.getsshPackagePlatform(cmd)
+			data = output
 
 			os_name = re.findall(r'^ID=(.*)', str(data), flags=re.MULTILINE)[0]
                         os_version = re.findall(r'^VERSION_ID=(.*)', str(data), flags=re.MULTILINE)[0]
