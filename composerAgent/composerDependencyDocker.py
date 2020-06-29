@@ -1,6 +1,7 @@
 # Developed by : Jays Patel (cyberthreatinfo.ca)
 # This script is use to find the python Composer packages vulnerabilities from linux machine and python source project.
 
+import os
 import time
 import docker
 import glob2
@@ -15,6 +16,7 @@ import requests
 from pkg_resources import parse_version
 import json
 import argparse
+from tqdm import tqdm
 from datetime import datetime
 
 
@@ -52,15 +54,27 @@ class getComposerVulnerabilities():
                 self.port = configData['port']
                 self.protocol = configData['protocol']
 
-                url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
-                response = requests.request("GET", url)
-                tokenData = response.text
-                tokenData = json.loads(tokenData)
-                if tokenData['result']:
+		if target != "local":
+                        self.username = configData[target]['uid']
+                        self.password = configData[target]['secret']
+                        self.repoUrl = configData[target]['url']
+                        if not self.username and not self.password:
+                                print "[ INFO ] %s Credential not configured in server.config file" % target
+                                sys.exit(1)
+
+		try:
+                    url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
+                    response = requests.request("GET", url)
+                    tokenData = response.text
+                    tokenData = json.loads(tokenData)
+                    if tokenData['result']:
                         print "[ OK ] Token valid, start scanning...."
-                else:
+                    else:
                         print "[ INFO ] Token invalid or expire, please login on portal and verify the TokenId"
                         sys.exit(1)
+		except:
+		    print "[ OK ] Server connection error, Please check internet connectivity"
+                    sys.exit(1)
 
 
 
@@ -77,6 +91,7 @@ class getComposerVulnerabilities():
                 self.results['header']['Project'] = self.project
                 self.results['header']['Owner'] = owner
                 self.results['header']['Target'] = self.target
+		self.results['header']['docker'] = "True"
 
                 self.vuln_depe = []
                 self.vuln_found = []
@@ -618,15 +633,21 @@ class getComposerVulnerabilities():
                     	self.resultsPkg['images'][image]['files'] = {}
 
 		    if filename == "composer.lock":
-			with open(file) as f:
-			    data = json.load(f)
+			print "1 - %s" % file
+			if os.stat(file).st_size != 0:
+			    with open(file) as f:
+			    	data = json.load(f)
+			
+			    print "========================"
+			    print data
 
-			self.resultsPkg['images'][image]['files'][filename] = {}
+			    self.resultsPkg['images'][image]['files'][filename] = {}
 
-			for pkg in data['packages']:
-				package_name = pkg['name']
+			    if 'packages' in data:
+			        for pkg in data['packages']:
+				    package_name = pkg['name']
 
-		    		if "/" in package_name:
+		    		    if "/" in package_name:
 					if package_name not in self.installPackageLists:
 						self.installPackageLists.append(package_name)
 
@@ -693,12 +714,14 @@ class getComposerVulnerabilities():
 
 
 		    if filename == "composer.json":
-			with open(file) as f:
-			    data = json.load(f)
+			print "1 - %s" % file
+			if os.stat(file).st_size != 0:
+			    with open(file) as f:
+			    	data = json.load(f)
 
-			self.resultsPkg['images'][image]['files'][filename] = {}
+			    self.resultsPkg['images'][image]['files'][filename] = {}
 
-			if 'require' in data:
+			    if 'require' in data:
 			    	for d in data['require']:
 		    		    if "/" in d:
 					if d not in self.installPackageLists:
@@ -719,7 +742,7 @@ class getComposerVulnerabilities():
 						self.resultsPkg['images'][image]['files'][filename][str(d)]["version"].append(str(versions3))
 
 
-			if 'require-dev' in data:
+			    if 'require-dev' in data:
 			    	for d in data['require-dev']:
 		    		    if "/" in d:
 					if d not in self.installPackageLists:
@@ -740,9 +763,6 @@ class getComposerVulnerabilities():
 						self.resultsPkg['images'][image]['files'][filename][str(d)]["version"].append(str(versions4))
 
 
-		
-		print "[ OK ] Getting Installed Python Library Details From Target"
-			
 
 	def getUnique(self, lists):
 		unique_list = [] 
@@ -752,7 +772,7 @@ class getComposerVulnerabilities():
 		return unique_list
 
 	def scanComposerPackage(self):
-		print "[ OK ] Preparing..."
+		print "[ OK ] Preparing...,It's take some time to completed."
 		output = self.genPkgVer()
 		print "[ OK ] Database sync started"
 		if len(self.installPackageLists) == 0:
@@ -767,15 +787,18 @@ class getComposerVulnerabilities():
 		self.cri = []
 		print "[ OK ] Scanning started"
 
+		print "[ OK ] There are are total %s images are processing" % len(output['images'])
 		for image in output['images']:
+			print "[ OK ] %s image scanning started" % image
 			if image not in self.results['images']:
 				self.results['images'][image] = {}
 				self.results['images'][image]['Issues'] = {}
 			if 'files' in output['images'][image]:
+				print "[ OK ] %s filename processing"
 				for filename in output['images'][image]['files']:
 					if filename not in self.testedWith:
 						self.testedWith.append(filename)
-					for d in output['images'][image]['files'][filename]:
+					for d in tqdm(output['images'][image]['files'][filename]):
 						vendor = output['images'][image]['files'][filename][d]['vendor']
 						product = output['images'][image]['files'][filename][d]['product']
 						version = output['images'][image]['files'][filename][d]['version']
@@ -860,7 +883,7 @@ if __name__ == "__main__":
 
         parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
         parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws', required=True, default='local')
+        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws/azure', required=True, default='local')
         parser.add_argument('-repo', '--reponame', type=str,  help='Enter repository name', default='*')
         parser.add_argument('-image', '--imagename', type=str,  help='Enter Image name', default='*')
         parser.add_argument('-tags', '--imagetags', type=str,  help='Enter Image tags', default='*')

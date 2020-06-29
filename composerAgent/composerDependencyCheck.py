@@ -14,6 +14,7 @@ import requests
 from pkg_resources import parse_version
 import json
 import argparse
+from tqdm import tqdm
 from datetime import datetime
 
 
@@ -37,15 +38,19 @@ class getComposerVulnerabilities():
                 self.port = configData['port']
                 self.protocol = configData['protocol']
 
-                url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
-                response = requests.request("GET", url)
-                tokenData = response.text
-                tokenData = json.loads(tokenData)
-                if tokenData['result']:
+		try:
+                    url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
+                    response = requests.request("GET", url)
+                    tokenData = response.text
+                    tokenData = json.loads(tokenData)
+                    if tokenData['result']:
                         print "[ OK ] Token valid, start scanning...."
-                else:
+                    else:
                         print "[ INFO ] Token invalid or expire, please login on portal and verify the TokenId"
                         sys.exit(1)
+		except:
+                    print "[ OK ] Server connection error, Please check internet connectivity"
+                    sys.exit(1)
 
 		self.results = {}
                 self.results['header'] = {}
@@ -57,6 +62,7 @@ class getComposerVulnerabilities():
                 self.results['header']['Project'] = self.project
                 self.results['header']['Owner'] = owner
                 self.results['header']['Target'] = "source"
+		self.results['header']['docker'] = "False"
 
                 self.vuln_depe = []
                 self.vuln_found = []
@@ -399,35 +405,37 @@ class getComposerVulnerabilities():
                         	self.results['files'] = {}
 
 			if filename == "composer.lock":
+			    if os.stat(file).st_size != 0:
+			    	with open(file) as f:
+				    data = json.load(f)
 
-			    with open(file) as f:
-				data = json.load(f)
+			        self.results['files'][filename] = {}
 
-			    self.results['files'][filename] = {}
-			    for pkg in data['packages']:
-				package_name = pkg['name']
+				if 'packages' in data:
+			            for pkg in data['packages']:
+				        package_name = pkg['name']
 
-		    		if "/" in package_name:
-					if package_name not in installPackageLists:
+		    		        if "/" in package_name:
+					    if package_name not in installPackageLists:
 						installPackageLists.append(package_name)
 
-					vendor = package_name.split("/")[0]
-					product = package_name.split("/")[1]
-					versions = pkg['version']
+					    vendor = package_name.split("/")[0]
+					    product = package_name.split("/")[1]
+					    versions = pkg['version']
 
-					if package_name not in self.results['files'][filename]:
+					    if package_name not in self.results['files'][filename]:
 						self.results['files'][filename][str(package_name)] = {}
 						self.results['files'][filename][str(package_name)]["product"] = str(product)
 						self.results['files'][filename][str(package_name)]["vendor"] = str(vendor)
 						self.results['files'][filename][str(package_name)]["version"] = []
 						self.results['files'][filename][str(package_name)]["depend"] = []
 
-					if versions not in self.results['files'][filename][package_name]["version"]:
+					    if versions not in self.results['files'][filename][package_name]["version"]:
 						self.results['files'][filename][package_name]["version"].append(str(versions))
 
-					if 'require' in pkg:
-					    for d in pkg['require']:
-						if "/" in d:
+					    if 'require' in pkg:
+					        for d in pkg['require']:
+						    if "/" in d:
 							if d not in installPackageLists:
 								installPackageLists.append(d)
 
@@ -448,9 +456,9 @@ class getComposerVulnerabilities():
 							if "%s@%s" % (str(package_name), str(versions)) not in self.results['files'][filename][d]["depend"]:
 								self.results['files'][filename][str(d)]["depend"].append("%s@%s" % (str(package_name), str(versions)))
 
-					if 'require-dev' in pkg:
-					    for d in pkg['require-dev']:
-						if "/" in d:
+					    if 'require-dev' in pkg:
+					        for d in pkg['require-dev']:
+						    if "/" in d:
 							if d not in installPackageLists:
 								installPackageLists.append(d)
 
@@ -474,56 +482,55 @@ class getComposerVulnerabilities():
 
 
 			if filename == "composer.json":
+			    if os.stat(file).st_size != 0:
+			        with open(file) as f:
+				    data = json.load(f)
 
-			    with open(file) as f:
-				data = json.load(f)
-
-			    self.results['files'][filename] = {}
-			    if 'require' in data:
-			    	for d in data['require']:
-		    		    if "/" in d:
-					if d not in installPackageLists:
+			        self.results['files'][filename] = {}
+			        if 'require' in data:
+			    	    for d in data['require']:
+		    		        if "/" in d:
+					    if d not in installPackageLists:
 						installPackageLists.append(d)
 
-					vendor3 = d.split("/")[0]
-					product3 = d.split("/")[1]
-					versions3 = data['require'][d]
+					    vendor3 = d.split("/")[0]
+					    product3 = d.split("/")[1]
+					    versions3 = data['require'][d]
 					
-					if d not in self.results['files'][filename]:
+					    if d not in self.results['files'][filename]:
 						self.results['files'][filename][str(d)] = {}
 						self.results['files'][filename][str(d)]["product"] = str(product3)
 						self.results['files'][filename][str(d)]["vendor"] = str(vendor3)
 						self.results['files'][filename][str(d)]["version"] = []
 						self.results['files'][filename][str(d)]["depend"] = []
 
-					if str(versions3) not in  self.results['files'][filename][d]["version"]:
+					    if str(versions3) not in  self.results['files'][filename][d]["version"]:
 						self.results['files'][filename][str(d)]["version"].append(str(versions3))
 
 
-			    if 'require-dev' in data:
-			    	for d in data['require-dev']:
-		    		    if "/" in d:
-					if d not in installPackageLists:
+			        if 'require-dev' in data:
+			    	    for d in data['require-dev']:
+		    		        if "/" in d:
+					    if d not in installPackageLists:
 						installPackageLists.append(d)
 
-					vendor4 = d.split("/")[0]
-					product4 = d.split("/")[1]
-					versions4 = data['require-dev'][d]
+					    vendor4 = d.split("/")[0]
+					    product4 = d.split("/")[1]
+					    versions4 = data['require-dev'][d]
 					
-					if d not in self.results['files'][filename]:
+					    if d not in self.results['files'][filename]:
 						self.results['files'][filename][str(d)] = {}
 						self.results['files'][filename][str(d)]["product"] = str(product4)
 						self.results['files'][filename][str(d)]["vendor"] = str(vendor4)
 						self.results['files'][filename][str(d)]["version"] = []
 						self.results['files'][filename][str(d)]["depend"] = []
 			
-					if str(versions4) not in self.results['files'][filename][d]["version"]:
+					    if str(versions4) not in self.results['files'][filename][d]["version"]:
 						self.results['files'][filename][str(d)]["version"].append(str(versions4))
 
 
 		return installPackageLists
 		
-		print "[ OK ] Getting Installed Python Library Details From Target"
 			
 
 	def getUnique(self, lists):
@@ -534,7 +541,7 @@ class getComposerVulnerabilities():
 		return unique_list
 
 	def scanComposerPackage(self):
-		print "[ OK ] Preparing..."
+		print "[ OK ] Preparing..., It's take time to completed."
 		output = self.getInstallPkgList()
 		print "[ OK ] Database sync started"
 		self.syncData(output)
@@ -546,10 +553,12 @@ class getComposerVulnerabilities():
 		print "[ OK ] Scanning started"
 
 		self.results['Issues'] = {}
+		print "There are total %s files are processing" % len(self.results['files'])
 		for filename in self.results['files']:
+			print "[ OK ] Started %s file processing" % filename
 			if filename not in self.testedWith:
 				self.testedWith.append(filename)
-			for d in self.results['files'][filename]:
+			for d in tqdm(self.results['files'][filename]):
 				vendor = self.results['files'][filename][d]['vendor']
 				product = self.results['files'][filename][d]['product']
 				version = self.results['files'][filename][d]['version']

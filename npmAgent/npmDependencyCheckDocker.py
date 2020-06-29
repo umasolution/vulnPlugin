@@ -16,6 +16,7 @@ import requests
 from pkg_resources import parse_version
 import json
 from pexpect import pxssh
+from tqdm import tqdm
 import argparse
 from datetime import datetime
 import docker
@@ -57,6 +58,14 @@ class getNpmVulnerabilities():
 		self.port = configData['port']
 		self.protocol = configData['protocol']
 
+		if target != "local":
+                        self.username = configData[target]['uid']
+                        self.password = configData[target]['secret']
+                        self.repoUrl = configData[target]['url']
+                        if not self.username and not self.password:
+                                print "[ INFO ] %s Credential not configured in server.config file" % target
+                                sys.exit(1)
+
 		url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)	
 		response = requests.request("GET", url)
 		tokenData = response.text
@@ -79,6 +88,7 @@ class getNpmVulnerabilities():
                 self.results['header']['Project'] = self.project
                 self.results['header']['Owner'] = owner
                 self.results['header']['Target'] = self.target
+		self.results['header']['docker'] = "True"
 
 		self.vuln_depe = []
 		self.vuln_found = []
@@ -817,7 +827,7 @@ class getNpmVulnerabilities():
 		return unique_list
 
 	def scanNpmPackage(self):
-		print "[ OK ] Preparing..."
+		print "[ OK ] Image Fetching...It's take time to complete"
 		output = self.genPkgVer()
 		self.med = []
 		self.hig = []
@@ -826,17 +836,19 @@ class getNpmVulnerabilities():
 
 		print "[ OK ] Database sync started"
 		self.syncData(self.packageLists)
-		print "[ OK ] Database sync comleted"
+		print "[ OK ] Database sync completed"
 
 		print "[ OK ] Scanning started"
 
+		print "[ OK ] There are total %s images are processing" % len(output['images'])
 		for image in output['images']:
+		    print "[ OK ] %s image scanning started" % image
 		    if image not in self.results['images']:
 			self.results['images'][image] = {}
 		    	self.results['images'][image]['Issues'] = {}
 
 		    if 'files' in output['images'][image]:
-		        for filename in output['images'][image]['files']:
+		        for filename in tqdm(output['images'][image]['files']):
 			    if filename not in self.testedWith:
 				self.testedWith.append(filename)
 		    	    if filename != "header":

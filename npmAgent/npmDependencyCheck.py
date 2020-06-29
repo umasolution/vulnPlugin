@@ -6,6 +6,7 @@ import glob2
 import os.path
 import time
 import random
+from tqdm import tqdm
 import os.path
 from os import path
 import ast
@@ -69,6 +70,7 @@ class getNpmVulnerabilities():
 		self.results['header']['Project'] = self.project
 		self.results['header']['Owner'] = owner
 		self.results['header']['Target'] = "source"
+		self.results['header']['docker'] = "False"
 		
 
 		self.vuln_depe = []
@@ -609,7 +611,7 @@ class getNpmVulnerabilities():
 		return unique_list
 
 	def scanNpmPackage(self):
-		print "[ OK ] Preparing..."
+		print "[ OK ] Preparing..., It's take time to complete"
 		output = self.getInstallPkgList()
 		self.med = []
 		self.hig = []
@@ -624,7 +626,7 @@ class getNpmVulnerabilities():
 
 		self.results['Issues'] = {}
 		if 'files' in output:
-		    for filename in output['files']:
+		    for filename in tqdm(output['files']):
 			if filename not in self.testedWith:
 				self.testedWith.append(filename)
 		        for file in output['files'][filename]:

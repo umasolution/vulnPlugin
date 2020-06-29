@@ -16,6 +16,8 @@ import json
 from pexpect import pxssh
 import argparse
 from datetime import datetime
+from tqdm import tqdm
+
 
 
 class platformVulnCheck():
@@ -58,6 +60,7 @@ class platformVulnCheck():
                 self.results['header']['Date'] = self.report_name
                 self.results['header']['Project'] = self.project
                 self.results['header']['Owner'] = owner
+                self.results['header']['docker'] = "False"
                 self.report_path = reportPath
                 self.results['header']['Target'] = self.target
 
@@ -94,12 +97,46 @@ class platformVulnCheck():
         		return False
 
 		return True
+
+	def checkVer(self, newVer, oldVer):
+            	if self.lt(oldVer, newVer):
+			return False
+		else:
+			return True
 		
 
 	def matchVer(self, cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersions, severity, os_name):
+
+		if not severity:
+			severity = "Medium"
+
             	if self.lt(versions, mVersions):
+			if os_name == "debian":
+		    		if product not in self.results['remediation']:
+					self.results['remediation'][product] = {}
+					self.results['remediation'][product]['CVEs'] = []
+					self.results['remediation'][product]['DSA-ID'] = []
+					self.results['remediation'][product]['Patched Version'] = ''
+					self.results['remediation'][product]['Installed Version'] = mVersions
+
+			if os_name == "ubuntu":
+		    		if product not in self.results['remediation']:
+					self.results['remediation'][product] = {}
+					self.results['remediation'][product]['CVEs'] = []
+					self.results['remediation'][product]['USN-ID'] = []
+					self.results['remediation'][product]['Patched Version'] = ''
+
+					if re.findall(r'[\w+-]+(-\d+.\d+.\d+-\d+)[\w+-]+', str(product)):
+						mVersion = "%s_%s" % (product, mVersions)
+						self.results['remediation'][product]['Installed Version'] = mVersion
+					else:
+						self.results['remediation'][product]['Installed Version'] = mVersions
+
+
                         res = {}
                         res['cve_id'] = cve_id
+			if cve_id not in self.results['remediation'][product]['CVEs']:
+				self.results['remediation'][product]['CVEs'].append(cve_id)
                         res['product'] = product
                         res['versions'] = versions
                         res['vectorString'] = vectorString
@@ -115,13 +152,23 @@ class platformVulnCheck():
 
                         if os_name == "ubuntu":
                                 res['usn_id'] = usn_id
+				if usn_id not in self.results['remediation'][product]['USN-ID']:
+					self.results['remediation'][product]['USN-ID'].append(usn_id)
 
                         if os_name == "debian":
                                 res['dsa_id'] = usn_id
+				if usn_id not in self.results['remediation'][product]['DSA-ID']:
+					self.results['remediation'][product]['DSA-ID'].append(usn_id)
 
                         res['reference'] = reference
                         res['Installed Version'] = mVersions
                         res['Patch Version'] = versions
+
+			if self.results['remediation'][product]['Patched Version']:
+			    if self.checkVer(versions, self.results['remediation'][product]['Patched Version']):
+				self.results['remediation'][product]['Patched Version'] = versions
+			else:
+				self.results['remediation'][product]['Patched Version'] = versions
 
                         if product not in self.vuln_product:
                                 self.vuln_product.append(product)
@@ -145,6 +192,15 @@ class platformVulnCheck():
 	def getVulnData(self, product, mVersion, platform, os_name):
 		if ":" in product:
                         product = product.split(":")[0]
+
+		if os_name == "ubuntu":
+		    product1 = product
+		    if re.findall(r'[\w+-]+(-\d+.\d+.\d+-\d+)[\w+-]+', str(product)):
+			product1 = product
+			output = re.findall(r'([\w+-]+)(-\d+.\d+.\d+-\d+)([\w+-]+)', str(product))
+			product = "%s-x-x-x-x%s" % (output[0][0], output[0][2])
+			mVersion = "%s_%s" % (product1, mVersion)
+
 
                 platformArray = []
                 if re.findall(r'Ubuntu\s+(\d+.\d+.\d+)\s+LTS', str(platform)):
@@ -174,7 +230,7 @@ class platformVulnCheck():
                                 	usn_id = row['usn_id']
 					severity = row['severity']
                                 	reference = "https://usn.ubuntu.com/%s/" % usn_id
-                                	self.matchVer(cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersion, severity, os_name)
+                                	self.matchVer(cve_id, product1, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersion, severity, os_name)
 
 			    if os_name == "debian":
                             	for row in self.responseData[platform][product]:
@@ -285,43 +341,45 @@ class platformVulnCheck():
 
 
 	def scanPlatformPackage(self):
-		print "[ OK ] Preparing..."
+		print "[ OK ] Preparing.., It's take time to completed"
 		output = self.getInstallPkgList()
-		print "[ OK ] Scanning started"
 
 		self.results['Issues'] = {}
 		self.results['packages'] = output
+		self.results['remediation'] = {}
 
 		if len(output['pkgDetails']) > 0:
 			os_name = output['os_name']
                         os_version = output['os_version']
                         os_type = output['os_type']
 
-                        self.results['Issues']['os name'] = os_name
-                        self.results['Issues']['os version'] = os_version
-                        self.results['Issues']['os type'] = os_type
-                        self.results['Issues']['Issues'] = {}
+                        self.results['header']['os name'] = os_name
+                        self.results['header']['os version'] = os_version
+                        self.results['header']['os type'] = os_type
 
-			print "[ OK ] Database sync started"
+			print "[ OK ] Database sync started, this process take couple of minutes"
 			self.syncData(os_name)
 			print "[ OK ] Database sync comleted"
+			print "[ OK ] Scanning started"
 
-			for pkg in output['pkgDetails']:
-                                arch = pkg['archPkg']
-                                version = pkg['version']
-                                product = pkg['package']
+			for pkg in tqdm(output['pkgDetails']):
+			    #for pkg in output['pkgDetails']:
+                            arch = pkg['archPkg']
+                            version = pkg['version']
+                            product = pkg['package']
 
-                                if os_name == "ubuntu":
-                                        platform = os_type
-                                elif os_name == "debian":
-                                        platform = os_type
-                                else:
-                                        platform = os_version
+                            if os_name == "ubuntu":
+                            	platform = os_type
+                       	    elif os_name == "debian":
+                                platform = os_type
+                            else:
+                                platform = os_version
 
-				if product not in self.dependanciesCount:
-					self.dependanciesCount.append(product) 
+			    if product not in self.dependanciesCount:
+				self.dependanciesCount.append(product) 
 
-                                self.getVulnData(product, version, platform, os_name)
+                            self.getVulnData(product, version, platform, os_name)
+
 
 
 		print "[ OK ] Scanning Completed"

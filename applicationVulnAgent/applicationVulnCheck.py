@@ -16,6 +16,7 @@ import requests
 import MySQLdb
 import mysql.connector
 from pkg_resources import parse_version
+from tqdm import tqdm
 import json
 from pexpect import pxssh
 import argparse
@@ -48,15 +49,19 @@ class applicationVulnerabilities():
                 self.port = configData['port']
                 self.protocol = configData['protocol']
 
-                url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
-                response = requests.request("GET", url)
-                tokenData = response.text
-                tokenData = json.loads(tokenData)
-                if tokenData['result']:
+		try:
+                    url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
+                    response = requests.request("GET", url)
+                    tokenData = response.text
+                    tokenData = json.loads(tokenData)
+                    if tokenData['result']:
                         print "[ OK ] Token valid, start scanning...."
-                else:
+                    else:
                         print "[ INFO ] Token invalid or expire, please login on portal and verify the TokenId"
                         sys.exit(1)
+		except:
+		    print "[ OK ] Server connection error, Please check internet connectivity"
+		    sys.exit(1)
 
 
                 self.results = {}
@@ -68,6 +73,7 @@ class applicationVulnerabilities():
                 self.results['header']['Owner'] = owner
                 self.report_path = reportPath
                 self.results['header']['Target'] = self.target
+		self.results['header']['docker'] = "False"
 
                 self.vuln_found = []
 		self.scanApplications = []
@@ -468,24 +474,25 @@ class applicationVulnerabilities():
                 self.low = []
 		self.cri = []
 
+		print "[ OK ] Preparing..., It's take some time to completed."
 		packageLists = self.getInstallPkgList()
-		print "[ OK ] Preparing..."
 
 		self.results['Issues'] = {}
 
-		print "[ OK ] Scan started"
+		print "[ OK ] Scanning started"
+		print "[ OK ] There are total %s applications are processing" % len(self.results['applications'])
 		for app in self.results['applications']:
-		    for app1 in self.results['applications'][app]:
+		    print "[ OK ] Start %s application processing" % app
+		    for app1 in tqdm(self.results['applications'][app]):
 			product = app1['product']
 			versions = app1['version']
-			print "[ OK ] Snyc Data...."
 			self.syncData(product)
 			if product not in self.scanApplications:
 				self.scanApplications.append(product)
 
 			self.getVulnData(product, versions)
 
-		print "[ OK ] Scan completed"
+		print "[ OK ] Scannnigg completed"
 
                 self.results['header']['Severity'] = {}
                 self.results['header']['Total Scanned Packages'] = len(self.scanApplications)

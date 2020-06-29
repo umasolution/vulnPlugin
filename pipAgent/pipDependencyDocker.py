@@ -22,6 +22,7 @@ from pexpect import pxssh
 import argparse
 import sqlite3
 from datetime import datetime
+from tqdm import tqdm
 
 
 class getPipVulnerabilities():
@@ -88,6 +89,7 @@ class getPipVulnerabilities():
                 self.results['header']['Project'] = self.project
                 self.results['header']['Owner'] = owner
                 self.results['header']['Target'] = self.target
+		self.results['header']['docker'] = "True"
 
                 self.vuln_depe = []
                 self.vuln_found = []
@@ -403,8 +405,6 @@ class getPipVulnerabilities():
 
 
 	def getInstallPkgList(self, location, image):
-		print "[ OK ] Getting Installed Python Library Details From Target"
-
 		if 'files' not in self.resultsPkg['images'][image]:
 			self.resultsPkg['images'][image]['files'] = {}
 
@@ -721,13 +721,14 @@ class getPipVulnerabilities():
                 self.hig = []
                 self.low = []
 		self.cri = []
+		print "[ OK ] Image Fetching...It's take time to complete"
 		output = self.genPkgVer()
-		print "[ OK ] Snyc Data...."
 		self.syncData(self.resultsPackage)
-		print "[ OK ] Preparing..."
 
-		print "[ OK ] Scan started"
+		print "[ OK ] Scanning started"
+		print "[ OK ] There are total %s images are processing" % len(output['images'])
 		for image in output['images']:
+			print "[ OK ] %s image scanning started" % image
 			if image not in self.results['images']:
 				self.results['images'][image] = {}
 				self.results['images'][image]['Issues'] = {}
@@ -736,14 +737,14 @@ class getPipVulnerabilities():
 				for filename in output['images'][image]['files']:
 					if filename not in self.testedWith:
 						self.testedWith.append(filename)
-					for result in output['images'][image]['files'][filename]['packages']:
+					for result in tqdm(output['images'][image]['files'][filename]['packages']):
 						product = result['product']
 						versions = result['versions']
 						if product not in self.dependanciesCount:
 							self.dependanciesCount.append(product)
 						self.getVulnData(product, versions, filename, image)
 
-		print "[ OK ] Scan completed"
+		print "[ OK ] Scanning completed"
 
 
 		self.results['header']['Tested With'] = ','.join(self.testedWith)
@@ -821,7 +822,7 @@ if __name__ == "__main__":
 
 	parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
         parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws', required=True, default='local')
+        parser.add_argument('-t', '--target', type=str,  help='Enter target type local/docker/aws/azure', required=True, default='local')
         parser.add_argument('-repo', '--reponame', type=str,  help='Enter repository name', default='*')
         parser.add_argument('-image', '--imagename', type=str,  help='Enter Image name', default='*')
         parser.add_argument('-tags', '--imagetags', type=str,  help='Enter Image tags', default='*')

@@ -17,6 +17,7 @@ import json
 from pexpect import pxssh
 import argparse
 from datetime import datetime
+from tqdm import tqdm
 
 
 class platformVulnCheckDocker():
@@ -80,6 +81,7 @@ class platformVulnCheckDocker():
                 self.results['header']['Date'] = self.report_name
                 self.results['header']['Project'] = self.project
                 self.results['header']['Owner'] = owner
+                self.results['header']['docker'] = "True"
                 self.report_path = reportPath
                 self.results['header']['Target'] = self.target
 		
@@ -618,6 +620,7 @@ class platformVulnCheckDocker():
 
 	def scanPlatformPackage(self):
 		print "[ OK ] Preparing..."
+		print "[ OK ] Image Fetching...It's take time to complete" 
 		output = self.getInstallPkgList()
 		print "[ OK ] Scanning started"
 		self.results['Issues'] = {}
@@ -640,7 +643,7 @@ class platformVulnCheckDocker():
 
 			self.syncData(os_name)
 
-			for pkg in output[image]['pkgDetails']:
+			for pkg in tqdm(output[image]['pkgDetails']):
 				arch = pkg['archPkg']
 				version = pkg['version']
 				product = pkg['package']

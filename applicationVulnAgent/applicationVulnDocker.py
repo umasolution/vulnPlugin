@@ -2,6 +2,7 @@
 # This script is use to find the Drupal Plugin vulnerabilities.
 
 import docker
+from tqdm import tqdm
 import time
 import os
 import glob2
@@ -69,15 +70,19 @@ class applicationVulnerabilities():
                                 sys.exit(1)
 
 
-                url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
-                response = requests.request("GET", url)
-                tokenData = response.text
-                tokenData = json.loads(tokenData)
-                if tokenData['result']:
+		try:
+                    url = "%s://%s:%s/api/checkToken/%s" % (self.protocol, self.server, self.port, self.tokenId)
+                    response = requests.request("GET", url)
+                    tokenData = response.text
+                    tokenData = json.loads(tokenData)
+                    if tokenData['result']:
                         print "[ OK ] Token valid, start scanning...."
-                else:
+                    else:
                         print "[ INFO ] Token invalid or expire, please login on portal and verify the TokenId"
                         sys.exit(1)
+		except:
+		    print "[ OK ] Server connection error, Please check internet connectivity"
+		    sys.exit(1)
 
 
 		self.results = {}
@@ -90,6 +95,7 @@ class applicationVulnerabilities():
                 self.results['header']['Owner'] = owner
                 self.report_path = reportPath
                 self.results['header']['Target'] = self.target
+		self.results['header']['docker'] = "True"
 
                 self.vuln_found = []
                 self.scanApplications = []
@@ -667,18 +673,21 @@ class applicationVulnerabilities():
 
 
 	def scanPackage(self):
-		print "[ OK ] Preparing..."
+		print "[ OK ] Preparing..., It's take time to complete."
 		self.genPkgVer()
 		print "[ OK ] Scan started"
 
+		print "[ OK ] There are total %s number of images are scanning" % len(self.results['images'])
+		i = 0
 		for image in self.results['images']:
+			i = i + 1
 			self.results['images'][image]['Issues'] = {}
-			for app in self.results['images'][image]['applications']:
+			print "[ OK ] (%s) Scanning started for %s" % (i, image)
+			for app in tqdm(self.results['images'][image]['applications']):
 		    		for app1 in self.results['images'][image]['applications'][app]:
 					product = app1['product']
 					product = product.lower()
 					versions = app1['version']
-					print "[ OK ] Snyc Data...."
 					self.syncData(product)
 					if product not in self.scanApplications:
                                 		self.scanApplications.append(product)

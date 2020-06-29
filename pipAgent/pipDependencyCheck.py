@@ -20,15 +20,19 @@ import json
 from pexpect import pxssh
 import argparse
 import sqlite3
+from tqdm import tqdm
 from datetime import datetime
 
 
 class getPipVulnerabilities():
-	def __init__(self, reportPath, project, targetFolder, owner, stype):
+	def __init__(self, reportPath, project, targetFolder, owner, stype, ip, username, password):
 		self.reportPath = reportPath
                 self.sourcefolder = targetFolder
                 self.project = project
 		self.scan_type = stype
+		self.ip = ip
+		self.username = username
+		self.password = password
 
                 if not path.exists("server.config"):
                         print "[ INFO ] server configuration json file not found in current directory"
@@ -63,6 +67,7 @@ class getPipVulnerabilities():
                 self.results['header']['Project'] = self.project
                 self.results['header']['Owner'] = owner
                 self.results['header']['Target'] = self.scan_type
+		self.results['header']['docker'] = "False"
 
                 self.vuln_depe = []
                 self.vuln_found = []
@@ -70,9 +75,9 @@ class getPipVulnerabilities():
                 self.dependanciesCount = []
 
 
-	def getsshPackagePip(self, hostname, username, password):
+	def getsshPackagePip(self):
 		s = pxssh.pxssh()
-		s.login(hostname, username, password)
+		s.login(self.ip, self.username, self.password)
 		s.sendline('pip freeze')
 		s.prompt()
 		data = s.before
@@ -113,7 +118,7 @@ class getPipVulnerabilities():
 
 
 	def matchVer(self, product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers):
-		if self.scan_type != "package":
+		if self.scan_type == "source":
 			mVer = self.checkSemantic(product, mVers)
 		else:
 			mVer = mVers
@@ -374,13 +379,29 @@ class getPipVulnerabilities():
 	def getInstallPkgList(self):
 		resultsPackage = []
 
-		print "[ OK ] Getting Installed Python Library Details From Target"
-		if self.scan_type == "package":
+		if self.scan_type == "local":
 			self.results['files'] = {}
 			self.results['files']['requirement.txt'] = {}
 			self.results['files']['requirement.txt']['packages'] = []
 
 			status, output = commands.getstatusoutput("pip freeze")
+			for strLine in output.split("\n"):
+			    if re.findall(r'(.*)==(.*)', str(strLine)):
+				details = re.findall(r'(.*)==(.*)', str(strLine))[0]
+				product = details[0]
+				versions = details[1]
+				res = {}
+				res['product'] = product.strip()
+				res['versions'] = versions.replace(" ", "")
+				self.results['files']['requirement.txt']['packages'].append(res)
+				resultsPackage.append(product.strip())
+
+		if self.scan_type == "remote":
+			self.results['files'] = {}
+			self.results['files']['requirement.txt'] = {}
+			self.results['files']['requirement.txt']['packages'] = []
+
+			output = self.getsshPackagePip()
 			for strLine in output.split("\n"):
 			    if re.findall(r'(.*)==(.*)', str(strLine)):
 				details = re.findall(r'(.*)==(.*)', str(strLine))[0]
@@ -491,18 +512,19 @@ class getPipVulnerabilities():
                 self.hig = []
                 self.low = []
 		self.cri = []
+		print "[ OK ] Preparing..., It's will take time to completed"
 		packageLists = self.getInstallPkgList()
-		print "[ OK ] Snyc Data...."
 		self.syncData(packageLists)
-		print "[ OK ] Preparing..."
 
 		self.results['Issues'] = {}
 
-		print "[ OK ] Scan started"
+		print "[ OK ] Scanning started"
+		print "[ OK [ There are total %s files are processing" % len(self.results['files'])
 		for filename in self.results['files']:
+			print "[ OK ] %s file is processing" % filename
 			if filename not in self.testedWith:
 				self.testedWith.append(filename)
-			for result in self.results['files'][filename]['packages']:
+			for result in tqdm(self.results['files'][filename]['packages']):
 				product = result['product']
 				versions = result['versions']
 
@@ -511,7 +533,7 @@ class getPipVulnerabilities():
 
 				self.getVulnData(product, versions)
 
-		print "[ OK ] Scan completed"
+		print "[ OK ] Scanning completed"
 
 		self.results['header']['Tested With'] = ','.join(self.testedWith)
                 self.results['header']['Severity'] = {}
@@ -586,14 +608,37 @@ if __name__ == "__main__":
 
         parser.add_argument('-r', '--reportPath', type=str,  help='Enter Report Path', required=True)
         parser.add_argument('-n', '--projectname', type=str,  help='Enter Project Name', required=True)
-        parser.add_argument('-t', '--target', type=str,  help='Enter target source folder', required=True)
+        parser.add_argument('-p', '--stype', type=str,  help='Enter scan type source/local/remote', required=True)
         parser.add_argument('-o', '--owner', type=str,  help='Enter project owner', required=True)
-        parser.add_argument('-p', '--stype', type=str,  help='Enter scan type source/package', required=True)
+        parser.add_argument('-t', '--target', type=str,  help='Enter target source folder')
+        parser.add_argument('-ip', '--ip', type=str,  help='Enter Remote IP')
+        parser.add_argument('-u', '--username', type=str,  help='Enter remote machine username')
+        parser.add_argument('-pw', '--password', type=str,  help='Enter remote machine password')
 
         parser.add_argument('-v', '--version', action='version',
                     version='%(prog)s 1.0')
 
         results = parser.parse_args()
+
+	if results.stype == "source":
+		if not results.target:
+			print "[ OK ] Please set source path, which you need to be scan"
+			sys.exit(1)
+	
+	if results.stype == "remote":
+		if not results.ip and not results.username and not results.password:
+			print "[ OK ] Please enter remote systme IP, Username and Password"
+			sys.exit(1)
+
+	if not results.ip:
+		results.ip = ''
+	if not results.username:
+		results.username = ''
+	if not results.password:
+		results.password = ''
+	if not results.target:
+		results.target = ''
+
 
         if not results.owner:
                 owner = "Unknow"
@@ -655,7 +700,7 @@ modified versions of the software inside them, although the m
 
 Do you want to accept ?
         """
-        res = getPipVulnerabilities(results.reportPath, results.projectname, results.target, owner, results.stype)
+        res = getPipVulnerabilities(results.reportPath, results.projectname, results.target, owner, results.stype, results.ip, results.username, results.password)
 
         if res.query_yes_no(data):
                 res.scanPipPackage()
