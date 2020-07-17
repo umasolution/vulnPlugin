@@ -595,9 +595,10 @@ class applicationVulnerabilities():
 
                         imageName = str(imageName)
                         self.results['images'][imageName] = {}
-                        self.results['images'][imageName]['os_name'] = str(os_name.strip())
-                        self.results['images'][imageName]['os_version'] = str(os_version.replace('"', '').strip())
-                        self.results['images'][imageName]['os_type'] = str(os_type.strip())
+			self.results['images'][imageName]['header'] = {}
+                        self.results['images'][imageName]['header']['os_name'] = str(os_name.strip())
+                        self.results['images'][imageName]['header']['os_version'] = str(os_version.replace('"', '').strip())
+                        self.results['images'][imageName]['header']['os_type'] = str(os_type.strip())
 			
 			self.getImageDetails(resJson, imageName, container_name)
 
@@ -680,8 +681,17 @@ class applicationVulnerabilities():
 		print "[ OK ] There are total %s number of images are scanning" % len(self.results['images'])
 		i = 0
 		for image in self.results['images']:
+			self.low = []
+                    	self.hig = []
+                    	self.med = []
+                    	self.cri = []
+                    	self.dependanciesCount = []
+                    	self.vuln_found = []
+                    	self.vuln_depe = []
+
 			i = i + 1
 			self.results['images'][image]['Issues'] = {}
+
 			print "[ OK ] (%s) Scanning started for %s" % (i, image)
 			for app in tqdm(self.results['images'][image]['applications']):
 		    		for app1 in self.results['images'][image]['applications'][app]:
@@ -693,19 +703,20 @@ class applicationVulnerabilities():
                                 		self.scanApplications.append(product)
 					self.getVulnData(product, versions, image)
 
+			self.results['images'][image]['header']['Severity'] = {}
+                        self.results['images'][image]['header']['Severity']['Low'] = len(self.low)
+                        self.results['images'][image]['header']['Severity']['High'] = len(self.hig)
+                        self.results['images'][image]['header']['Severity']['Medium'] = len(self.med)
+                        self.results['images'][image]['header']['Severity']['Critical'] = len(self.cri)
+                	self.results['images'][image]['header']['Total Scanned Packages'] = len(self.scanApplications)
+                	self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                	self.results['images'][image]['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_product))
+                	self.results['images'][image]['header']['Scanned Applications'] = ','.join(self.scanApplications)
+
 		print "[ OK ] Scan completed"
 
-		self.results['header']['Severity'] = {}
-                self.results['header']['Total Scanned Packages'] = len(self.scanApplications)
-                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
-                self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_product))
-                self.results['header']['Scanned Applications'] = ','.join(self.scanApplications)
 		self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
                 self.results['header']['Total Scanned Images'] = len(self.imageName)
-                self.results['header']['Severity']['Low'] = len(self.low)
-                self.results['header']['Severity']['High'] = len(self.hig)
-                self.results['header']['Severity']['Medium'] = len(self.med)
-                self.results['header']['Severity']['Critical'] = len(self.cri)
 	
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:

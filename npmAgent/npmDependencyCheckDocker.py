@@ -635,6 +635,7 @@ class getNpmVulnerabilities():
 	def getimagepkgVer(self, images):
 		self.resultsPkg = {}
 		self.resultsPkg['images'] = {}
+	    	self.packageLists = []
 
                 for image in images:
                         imageName = image
@@ -682,6 +683,7 @@ class getNpmVulnerabilities():
                         self.resultsPkg['images'][imageName]['os_name'] = str(os_name.strip())
                         self.resultsPkg['images'][imageName]['os_version'] = str(os_version.replace('"', '').strip())
                         self.resultsPkg['images'][imageName]['os_type'] = str(os_type.strip())
+			self.resultsPkg['images'][imageName]['files'] = {}
 
 			self.getInstallPkgList("/tmp/%s" % container_name, imageName)
 
@@ -738,7 +740,6 @@ class getNpmVulnerabilities():
 
 	def getInstallPkgList(self, location, image):
 	    for file in glob2.glob('%s/**/package*.json' % (location), recursive=True):
-	    	self.packageLists = []
 		file = os.path.abspath(file)
 		filename = os.path.basename(file)
 		if filename not in self.testedWith:
@@ -834,28 +835,47 @@ class getNpmVulnerabilities():
 		self.low = []
 		self.cri = []
 
+		if len(self.packageLists) == 0:
+                        print "[ OK ] Not found any node packages package.json files"
+                        sys.exit(1)
+
+
 		print "[ OK ] Database sync started"
 		self.syncData(self.packageLists)
 		print "[ OK ] Database sync completed"
 
 		print "[ OK ] Scanning started"
+	
+		self.results['packages'] = output['images']
 
 		print "[ OK ] There are total %s images are processing" % len(output['images'])
 		for image in output['images']:
+		    self.low = []
+		    self.hig = []
+		    self.med = []
+		    self.cri = []
+		    self.dependanciesCount = []
+		    self.vuln_found = []
+		    self.vuln_depe = [] 
 		    print "[ OK ] %s image scanning started" % image
 		    if image not in self.results['images']:
 			self.results['images'][image] = {}
 		    	self.results['images'][image]['Issues'] = {}
+			self.results['images'][image]['header'] = {}
+
 
 		    if 'files' in output['images'][image]:
-		        for filename in tqdm(output['images'][image]['files']):
+		        for filename in output['images'][image]['files']:
 			    if filename not in self.testedWith:
 				self.testedWith.append(filename)
 		    	    if filename != "header":
+
+		    		print "[ OK ] There are total %s files are scanning" % len(output['images'][image]['files'][filename])
 		                for file in output['images'][image]['files'][filename]:
+		    		    print "[ OK ] %s scanning started" % file
 		            	    if 'lock' not in output['images'][image]['files'][filename][file]:
 					if 'devDependencies' in output['images'][image]['files'][filename][file]:
-	   	    	                    for d in output['images'][image]['files'][filename][file]['devDependencies']:
+	   	    	                    for d in tqdm(output['images'][image]['files'][filename][file]['devDependencies']):
 				    	    	product = d['product']
 				    	    	version = d['version']
 						if product not in self.dependanciesCount:
@@ -863,7 +883,7 @@ class getNpmVulnerabilities():
 				    	    	self.getVulnData(product, version, filename, image, '')
 
 					if 'dependencies' in output['images'][image]['files'][filename][file]:
-		    	                    for d in output['images'][image]['files'][filename][file]['dependencies']:
+		    	                    for d in tqdm(output['images'][image]['files'][filename][file]['dependencies']):
 				    	    	product = d['product']
 				    	    	version = d['version']
 						if product not in self.dependanciesCount:
@@ -871,7 +891,7 @@ class getNpmVulnerabilities():
 				    	    	self.getVulnData(product, version, filename, image, '')
 
 		    	            if 'lock' in output['images'][image]['files'][filename][file]:
-			                for d in output['images'][image]['files'][filename][file]:
+			                for d in tqdm(output['images'][image]['files'][filename][file]):
 			            	    if d != "lock":
 			    	                if "/" in d:
 					    	    product = d.split("/")[1]
@@ -885,20 +905,21 @@ class getNpmVulnerabilities():
 			    	                dependancyDetails = output['images'][image]['files'][filename][file][d]['depend']
 			    	                self.getVulnData(product, version, filename, image, dependancyDetails)
 
+			self.results['images'][image]['header']['Severity'] = {}
+                	self.results['images'][image]['header']['Severity']['Low'] = len(self.low)
+                	self.results['images'][image]['header']['Severity']['High'] = len(self.hig)
+                	self.results['images'][image]['header']['Severity']['Medium'] = len(self.med)
+                	self.results['images'][image]['header']['Severity']['Critical'] = len(self.cri)
+                	self.results['images'][image]['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
+                	self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                	self.results['images'][image]['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
+
 
 		print "[ OK ] Scanning Completed"
 			
 		self.results['header']['Tested With'] = ','.join(self.testedWith)
-                self.results['header']['Severity'] = {}
-                self.results['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
-                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
-                self.results['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
 		self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
 		self.results['header']['Total Scanned Images'] = len(self.imageName)
-                self.results['header']['Severity']['Low'] = len(self.low)
-                self.results['header']['Severity']['High'] = len(self.hig)
-                self.results['header']['Severity']['Medium'] = len(self.med)
-                self.results['header']['Severity']['Critical'] = len(self.cri)
 
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:

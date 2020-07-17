@@ -723,15 +723,31 @@ class getPipVulnerabilities():
 		self.cri = []
 		print "[ OK ] Image Fetching...It's take time to complete"
 		output = self.genPkgVer()
+
+		if len(self.resultsPackage) == 0:
+                        print "[ OK ] Not found any requirements.txt files"
+                        sys.exit(1)
+
 		self.syncData(self.resultsPackage)
 
 		print "[ OK ] Scanning started"
+		self.results['packages'] = output['images']
+
 		print "[ OK ] There are total %s images are processing" % len(output['images'])
 		for image in output['images']:
+			self.low = []
+                        self.hig = []
+                        self.med = []
+                        self.cri = []
+                        self.dependanciesCount = []
+                        self.vuln_found = []
+                        self.vuln_depe = []
+
 			print "[ OK ] %s image scanning started" % image
 			if image not in self.results['images']:
 				self.results['images'][image] = {}
 				self.results['images'][image]['Issues'] = {}
+				self.results['images'][image]['header'] = {}
 
 			if 'files' in output['images'][image]:
 				for filename in output['images'][image]['files']:
@@ -744,20 +760,21 @@ class getPipVulnerabilities():
 							self.dependanciesCount.append(product)
 						self.getVulnData(product, versions, filename, image)
 
+			self.results['images'][image]['header']['Severity'] = {}
+                        self.results['images'][image]['header']['Severity']['Low'] = len(self.low)
+                        self.results['images'][image]['header']['Severity']['High'] = len(self.hig)
+                        self.results['images'][image]['header']['Severity']['Medium'] = len(self.med)
+                        self.results['images'][image]['header']['Severity']['Critical'] = len(self.cri)
+                        self.results['images'][image]['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
+                        self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                        self.results['images'][image]['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
+
 		print "[ OK ] Scanning completed"
 
 
 		self.results['header']['Tested With'] = ','.join(self.testedWith)
-                self.results['header']['Severity'] = {}
-                self.results['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
-                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
-                self.results['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
-                self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
+		self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
                 self.results['header']['Total Scanned Images'] = len(self.imageName)
-                self.results['header']['Severity']['Low'] = len(self.low)
-                self.results['header']['Severity']['High'] = len(self.hig)
-                self.results['header']['Severity']['Medium'] = len(self.med)
-                self.results['header']['Severity']['Critical'] = len(self.cri)
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
                         json.dump(self.results, f)

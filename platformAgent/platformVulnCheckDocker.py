@@ -140,11 +140,11 @@ class platformVulnCheckDocker():
 		   	if product not in self.vuln_product:
 				self.vuln_product.append(product)
 
-			if severity not in self.results['Issues'][image]['Issues']:
-				self.results['Issues'][image]['Issues'][severity] = []
+			if severity not in self.results['images'][image]['Issues']:
+				self.results['images'][image]['Issues'][severity] = []
 
-			if res not in self.results['Issues'][image]['Issues'][severity]:
-				self.results['Issues'][image]['Issues'][severity].append(res)
+			if res not in self.results['images'][image]['Issues'][severity]:
+				self.results['images'][image]['Issues'][severity].append(res)
 
 				self.vuln_found.append(cve_id)
 
@@ -623,24 +623,32 @@ class platformVulnCheckDocker():
 		print "[ OK ] Image Fetching...It's take time to complete" 
 		output = self.getInstallPkgList()
 		print "[ OK ] Scanning started"
-		self.results['Issues'] = {}
+		self.results['images'] = {}
 		self.results['packages'] = output
 
 		for image in output:
+		    self.low = []
+                    self.hig = []
+                    self.med = []
+                    self.cri = []
+                    self.dependanciesCount = []
+                    self.vuln_found = []
+                    self.vuln_depe = []
+
 		    print "[ OK ] %s image scanning started" % image
 		    if len(output[image]['pkgDetails']) > 0:
 			os_name = output[image]['os_name']
 			os_version = output[image]['os_version']
 			os_type = output[image]['os_type']
 
-			if image not in self.results['Issues']:
-				self.results['Issues'][image] = {}
-				self.results['Issues'][image]['os name'] = os_name
-				self.results['Issues'][image]['os version'] = os_version
-				self.results['Issues'][image]['os type'] = os_type
-				self.results['Issues'][image]['Issues'] = {}
+			if image not in self.results['images']:
+				self.results['images'][image] = {}
+				self.results['images'][image]['header'] = {}
+				self.results['images'][image]['header']['os name'] = os_name
+				self.results['images'][image]['header']['os version'] = os_version
+				self.results['images'][image]['header']['os type'] = os_type
+				self.results['images'][image]['Issues'] = {}
 			
-
 			self.syncData(os_name)
 
 			for pkg in tqdm(output[image]['pkgDetails']):
@@ -660,21 +668,22 @@ class platformVulnCheckDocker():
 				
 			    	self.getVulnData(product, version, platform, os_name, image)
 
+                	self.results['images'][image]['header']['Severity'] = {}
+                	self.results['images'][image]['header']['Total Scanned Packages'] = len(self.dependanciesCount)
+                	self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                	self.results['images'][image]['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_depe))
+                	self.results['images'][image]['header']['Severity']['Low'] = len(self.low)
+                	self.results['images'][image]['header']['Severity']['High'] = len(self.hig)
+                	self.results['images'][image]['header']['Severity']['Medium'] = len(self.med)
+                	self.results['images'][image]['header']['Severity']['Critical'] = len(self.cri)
+
 		    print "[ OK ] %s image scanning completed" % image
 
 		print "[ OK ] Scanning Completed"
 
-                self.results['header']['Severity'] = {}
-                self.results['header']['Total Scanned Packages'] = len(self.dependanciesCount)
-                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
-                self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_depe))
+			
                 self.results['header']['Total Scanned Namespaces'] = len(self.namespace)
                 self.results['header']['Total Scanned Images'] = len(self.imageName)
-                self.results['header']['Severity']['Low'] = len(self.low)
-                self.results['header']['Severity']['High'] = len(self.hig)
-                self.results['header']['Severity']['Medium'] = len(self.med)
-                self.results['header']['Severity']['Critical'] = len(self.cri)
-			
 
 		with open("%s/%s.json" % (self.report_path, self.report_name), "w") as f:
 			json.dump(self.results, f)

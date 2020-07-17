@@ -1,5 +1,5 @@
 # Developed by : Jays Patel (cyberthreatinfo.ca)
-# This script is use to find the python Composer packages vulnerabilities from linux machine and python source project.
+# This script is use to find the Maven packages vulnerabilities from linux machine and python source project.
 
 import time
 import glob2
@@ -18,7 +18,7 @@ from tqdm import tqdm
 from datetime import datetime
 
 
-class getComposerVulnerabilities():
+class getMavenVulnerabilities():
 	def __init__(self, reportPath, project, targetFolder, owner):
 		self.reportPath = reportPath
                 self.sourcefolder = targetFolder
@@ -132,13 +132,12 @@ class getComposerVulnerabilities():
 
                 return ver1
 
-	def matchVer(self, mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, dependancy, patch):
-		mVersions = self.getMatchVersionLists(product, vendor, mVersions)
-		mVer =  self.maxValue(mVersions)
 
-		if not severity:
+	def matchVer(self, product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, groupId, artifactId):
+		mVer = mVers
+		
+                if not severity:
                         severity = "Medium"
-
                 if severity.lower() == "medium" or severity.lower() == "moderate":
                         severity = "Medium"
                 elif severity.lower() == "high":
@@ -148,13 +147,12 @@ class getComposerVulnerabilities():
 		elif severity.lower() == "critical":
                         severity = "Critical"
 
-
-		for vers in versions.split(","):
+                for vers in versions.split(","):
                     if re.findall(r'\[.*:.*\]', str(vers)):
                         vers1 = re.findall(r'\[(.*):', str(vers))[0]
                         vers2 = re.findall(r':(.*)\]', str(vers))[0]
 
-			if self.gtEq(vers1, mVer) and self.ltEq(vers2, mVer):
+                        if self.gtEq(vers1, mVer) and self.ltEq(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
                                         self.results['Issues'][severity] = []
@@ -169,8 +167,9 @@ class getComposerVulnerabilities():
                                 res['recommendation'] = str(recommendation)
                                 res['reference'] = str(reference)
                                 res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(dependancy)
-                                res['Versions'] = str(mVer)
+                                res['Versions'] = str(mVers)
+				res['groupId'] = str(groupId)
+				res['artifactId'] = str(artifactId)
 
                                 if res not in self.results['Issues'][severity]:
                                         self.results['Issues'][severity].append(res)
@@ -207,8 +206,9 @@ class getComposerVulnerabilities():
                                 res['recommendation'] = str(recommendation)
                                 res['reference'] = str(reference)
                                 res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
+				res['groupId'] = str(groupId)
+				res['artifactId'] = str(artifactId)
 
                                 if res not in self.results['Issues'][severity]:
                                         self.results['Issues'][severity].append(res)
@@ -225,7 +225,6 @@ class getComposerVulnerabilities():
                                         self.vuln_found.append(product)
                                         if product not in self.vuln_depe:
                                                 self.vuln_depe.append(product)
-
 
 		    elif re.findall(r'\[.*:.*\)', str(vers)):
                         vers1 = re.findall(r'\[(.*):', str(vers))[0]
@@ -246,8 +245,9 @@ class getComposerVulnerabilities():
                                 res['recommendation'] = str(recommendation)
                                 res['reference'] = str(reference)
                                 res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
+				res['groupId'] = str(groupId)
+				res['artifactId'] = str(artifactId)
 
                                 if res not in self.results['Issues'][severity]:
                                         self.results['Issues'][severity].append(res)
@@ -284,8 +284,9 @@ class getComposerVulnerabilities():
                                 res['recommendation'] = str(recommendation)
                                 res['reference'] = str(reference)
                                 res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
+				res['groupId'] = str(groupId)
+				res['artifactId'] = str(artifactId)
 
                                 if res not in self.results['Issues'][severity]:
                                         self.results['Issues'][severity].append(res)
@@ -322,8 +323,9 @@ class getComposerVulnerabilities():
                                 res['recommendation'] = str(recommendation)
                                 res['reference'] = str(reference)
                                 res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
+				res['groupId'] = str(groupId)
+				res['artifactId'] = str(artifactId)
 
                                 if res not in self.results['Issues'][severity]:
                                         self.results['Issues'][severity].append(res)
@@ -358,8 +360,9 @@ class getComposerVulnerabilities():
                                 res['recommendation'] = str(recommendation)
                                 res['reference'] = str(reference)
                                 res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
                                 res['Versions'] = str(mVer)
+				res['groupId'] = str(groupId)
+				res['artifactId'] = str(artifactId)
 
                                 if res not in self.results['Issues'][severity]:
                                         self.results['Issues'][severity].append(res)
@@ -378,167 +381,92 @@ class getComposerVulnerabilities():
                                                 self.vuln_depe.append(product)
 
 
+	def getVulnData(self, productName, mVers):
+                for res in self.responseData['results'][productName]:
+                    if 'product' in res:
+                        product = res['product']
+                        vendor = res['vendor']
+                        cve_id = res['cve_id']
+                        reference = res['reference']
+                        versions = res['versions']
+                        vuln_name = res['vuln_name']
+                        vectorString = res['vectorString']
+                        baseScore = res['baseScore']
+                        recommendation = res['recommendation']
+                        patch = res['vulnerable version']
+                        pub_date = res['pub_date']
+                        severity = res['severity']
+			groupId = res['groupId']
+			artifactId = res['artifactId']
 
-	def getVulnData(self, product, vendor, mVersions, depend):
-                for row in self.responseData["results"]["%s/%s" % (vendor, product)]:
-                        cve_id = row['cve_id']
-			versions = row['versions']
-			reference = row['reference']
-			vuln_name = row['vuln_name']
-			vectorString = row['vectorString']
-			baseScore = row['baseScore']
-			recommendation = row['recommendation']
-			pub_date = row['pub_date']
-			patch = row['patch']
-			severity = row['severity']
-			self.matchVer(mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, depend, patch)
+			if versions == "*":
+				versions = "[0.0:999.999.999.999]"
+
+                        self.matchVer(product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, groupId, artifactId)
+
 
 
 	def getInstallPkgList(self):
-		self.installPackageLists = []
-		self.resultsPkg = {}
+		results = []
+		self.installedPackages = []
 
-		for file in glob2.glob('%s/**/composer.*' % (self.sourcefolder), recursive=True):
+		for file in glob2.glob('%s/**/*.jar' % (self.sourcefolder), recursive=True):
+			res = {}
+			product = ''	
+			version = ''
 			file = os.path.abspath(file)
 			filename = os.path.basename(file)
 
-			if 'files' not in self.resultsPkg:
-                        	self.resultsPkg['files'] = {}
 
-			if filename == "composer.lock":
-			    if os.stat(file).st_size != 0:
-			    	with open(file) as f:
-				    data = json.load(f)
+			cmd = 'unzip -p %s META-INF/MANIFEST.MF' % (file)
+			status, output = commands.getstatusoutput(cmd)
+			if re.findall(r'^(.*)-\d', str(filename)):
+				product = re.findall(r'^(.*)-\d', str(filename))[0]
 
-				if filename not in self.resultsPkg['files']:
-			       		self.resultsPkg['files'][filename] = {}
-
-				self.resultsPkg['files'][filename][file] = {}
-
-				if 'packages' in data:
-			            for pkg in data['packages']:
-				        package_name = pkg['name']
-
-		    		        if "/" in package_name:
-					    if package_name not in self.installPackageLists:
-						self.installPackageLists.append(package_name)
-
-					    vendor = package_name.split("/")[0]
-					    product = package_name.split("/")[1]
-					    versions = pkg['version']
-
-					    if package_name not in self.resultsPkg['files'][filename][file]:
-						self.resultsPkg['files'][filename][file][str(package_name)] = {}
-						self.resultsPkg['files'][filename][file][str(package_name)]["product"] = str(product)
-						self.resultsPkg['files'][filename][file][str(package_name)]["vendor"] = str(vendor)
-						self.resultsPkg['files'][filename][file][str(package_name)]["version"] = []
-						self.resultsPkg['files'][filename][file][str(package_name)]["depend"] = []
-
-					    if versions not in self.resultsPkg['files'][filename][file][package_name]["version"]:
-						self.resultsPkg['files'][filename][file][package_name]["version"].append(str(versions))
-
-					    if 'require' in pkg:
-					        for d in pkg['require']:
-						    if "/" in d:
-							if d not in self.installPackageLists:
-								self.installPackageLists.append(d)
-
-							vendor1 = d.split("/")[0]
-							product1 = d.split("/")[1]
-							versions1 = pkg['require'][d]
-
-							if d not in self.resultsPkg['files'][filename][file]:
-								self.resultsPkg['files'][filename][file][str(d)] = {}
-								self.resultsPkg['files'][filename][file][str(d)]["product"] = str(product1)
-								self.resultsPkg['files'][filename][file][str(d)]["vendor"] = str(vendor1)
-								self.resultsPkg['files'][filename][file][str(d)]["version"] = []
-								self.resultsPkg['files'][filename][file][str(d)]["depend"] = []
-
-							if versions1 not in self.resultsPkg['files'][filename][file][d]["version"]:
-								self.resultsPkg['files'][filename][file][str(d)]["version"].append(str(versions1))
-
-							if "%s@%s" % (str(package_name), str(versions)) not in self.resultsPkg['files'][filename][file][d]["depend"]:
-								self.resultsPkg['files'][filename][file][str(d)]["depend"].append("%s@%s" % (str(package_name), str(versions)))
-
-					    if 'require-dev' in pkg:
-					        for d in pkg['require-dev']:
-						    if "/" in d:
-							if d not in self.installPackageLists:
-								self.installPackageLists.append(d)
-
-							vendor2 = d.split("/")[0]
-							product2 = d.split("/")[1]
-							versions2 = pkg['require-dev'][d]
-
-							if d not in self.resultsPkg['files'][filename][file]:
-								self.resultsPkg['files'][filename][file][str(d)] = {}
-								self.resultsPkg['files'][filename][file][str(d)]["product"] = str(product2)
-								self.resultsPkg['files'][filename][file][str(d)]["vendor"] = str(vendor2)
-								self.resultsPkg['files'][filename][file][str(d)]["version"] = []
-								self.resultsPkg['files'][filename][file][str(d)]["depend"] = []
-
-							if versions2 not in self.resultsPkg['files'][filename][file][d]["version"]:
-								self.resultsPkg['files'][filename][file][str(d)]["version"].append(str(versions2))
-
-							if "%s@%s" % (str(package_name), str(versions)) not in self.resultsPkg['files'][filename][file][d]["depend"]:
-								self.resultsPkg['files'][filename][file][str(d)]["depend"].append("%s@%s" % (str(package_name), str(versions)))
-
-
-
-			if filename == "composer.json":
-			    if os.stat(file).st_size != 0:
-			        with open(file) as f:
-				    data = json.load(f)
-
-				if filename not in self.resultsPkg['files']:
-			        	self.resultsPkg['files'][filename] = {}
-
-				self.resultsPkg['files'][filename][file] = {}
-
-
-			        if 'require' in data:
-			    	    for d in data['require']:
-		    		        if "/" in d:
-					    if d not in self.installPackageLists:
-						self.installPackageLists.append(d)
-
-					    vendor3 = d.split("/")[0]
-					    product3 = d.split("/")[1]
-					    versions3 = data['require'][d]
-					
-					    if d not in self.resultsPkg['files'][filename][file]:
-						self.resultsPkg['files'][filename][file][str(d)] = {}
-						self.resultsPkg['files'][filename][file][str(d)]["product"] = str(product3)
-						self.resultsPkg['files'][filename][file][str(d)]["vendor"] = str(vendor3)
-						self.resultsPkg['files'][filename][file][str(d)]["version"] = []
-						self.resultsPkg['files'][filename][file][str(d)]["depend"] = []
-
-					    if str(versions3) not in  self.resultsPkg['files'][filename][file][d]["version"]:
-						self.resultsPkg['files'][filename][file][str(d)]["version"].append(str(versions3))
-
-
-			        if 'require-dev' in data:
-			    	    for d in data['require-dev']:
-		    		        if "/" in d:
-					    if d not in self.installPackageLists:
-						self.installPackageLists.append(d)
-
-					    vendor4 = d.split("/")[0]
-					    product4 = d.split("/")[1]
-					    versions4 = data['require-dev'][d]
-					
-					    if d not in self.resultsPkg['files'][filename][file]:
-						self.resultsPkg['files'][filename][file][str(d)] = {}
-						self.resultsPkg['files'][filename][file][str(d)]["product"] = str(product4)
-						self.resultsPkg['files'][filename][file][str(d)]["vendor"] = str(vendor4)
-						self.resultsPkg['files'][filename][file][str(d)]["version"] = []
-						self.resultsPkg['files'][filename][file][str(d)]["depend"] = []
+			if re.findall(r'((?:(?:\d+)[.]){1,}(?:\d+).*).jar', str(filename)):
+				version = re.findall(r'((?:(?:\d+)[.]){1,}(?:\d+).*).jar', str(filename))[0]
+			elif re.findall(r'-(\d+).jar', str(filename)):
+				version = re.findall(r'-(\d+).jar', str(filename))[0]
+			else:
+				version = ''
 			
-					    if str(versions4) not in self.resultsPkg['files'][filename][file][d]["version"]:
-						self.resultsPkg['files'][filename][file][str(d)]["version"].append(str(versions4))
+
+			bundle_name = ''
+			bundle_version = ''
+			bundle_sym_name = ''
+
+			if re.findall(r'Bundle-Name:\s+(.*)', str(output)):
+				bundle_name = re.findall(r'Bundle-Name:\s+(.*)', str(output))[0]
+				bundle_name = bundle_name.strip()
+			if re.findall(r'Bundle-Version:\s+(.*)', str(output)):
+				bundle_version = re.findall(r'Bundle-Version:\s+(.*)', str(output))[0]
+				bundle_version = bundle_version.strip()
+			if re.findall(r'Bundle-SymbolicName:\s+(.*)',  str(output)):
+				bundle_sym_name = re.findall(r'Bundle-SymbolicName:\s+(.*)',  str(output))[0]
+				bundle_sym_name = bundle_sym_name.strip()
+
+			res['filepath'] = file
+			res['filename'] = filename
+			res['product'] = product
+			res['version'] = version
+			res['bundle_name'] = bundle_name
+			res['bundle_version'] = bundle_version
+			res['bundle_sym_name'] = bundle_sym_name
+
+			if product not in self.installedPackages:
+				self.installedPackages.append(product)
+
+			if bundle_name not in self.installedPackages:
+				self.installedPackages.append(bundle_name)
+
+			if bundle_sym_name not in self.installedPackages:
+				self.installedPackages.append(bundle_sym_name)
+
+			results.append(res)
 
 
-		return self.resultsPkg
+
+		return results
 		
 			
 
@@ -549,11 +477,13 @@ class getComposerVulnerabilities():
 				unique_list.append(x)
 		return unique_list
 
-	def scanComposerPackage(self):
+	def scanMavenPackage(self):
 		print "[ OK ] Preparing..., It's take time to completed."
 		output = self.getInstallPkgList()
+		self.results['files'] = {}
+		self.results['files']['packages'] = output
 		print "[ OK ] Database sync started"
-		self.syncData(self.installPackageLists)
+		self.syncData(self.installedPackages)
 		print "[ OK ] Database sync comleted"
 		self.med = []
                 self.hig = []
@@ -562,34 +492,13 @@ class getComposerVulnerabilities():
 		print "[ OK ] Scanning started"
 
 		self.results['Issues'] = {}
-		self.results['files'] = {}
-
-		for filename in output['files']:
-			print "[ OK ] Started %s file processing" % filename
-			if filename not in self.testedWith:
-				self.testedWith.append(filename)
-			if filename not in self.results['files']:
-				self.results['files'] [filename] = {}
-				self.results['files'][filename]['packages'] = []
-			print "There are total %s %s files are processing" % (filename, len(output['files'][filename]))
-			for file in output['files'][filename]:
-				print "File %s Scanning Started" % file
-				for d in tqdm(output['files'][filename][file]):
-					vendor = output['files'][filename][file][d]['vendor']
-					product = output['files'][filename][file][d]['product']
-					version = output['files'][filename][file][d]['version']
-					depend = output['files'][filename][file][d]['depend']
-					if product not in self.dependanciesCount:
-						self.dependanciesCount.append(product)
-					self.getVulnData(product, vendor, version[0], ','.join(depend))
-
-					res = {}
-                                        res['product'] = product
-                                        res['version'] = version
-                                        res['file'] = file
-					res['Dependencies'] = ','.join(depend)
-                                        self.results['files'][filename]['packages'].append(res)
-	
+		print "There are total %s files are processing" % len(self.results['files'])
+		for d in tqdm(output):
+			product = d['product']
+			version = d['version']
+			if product not in self.dependanciesCount:
+				self.dependanciesCount.append(product)
+			self.getVulnData(product, version)
 
 		print "[ OK ] Scanning Completed"
 
@@ -621,7 +530,7 @@ class getComposerVulnerabilities():
 
 	def syncData(self, productLists):
 	    try:
-                url = "%s://%s:%s/api/scanDetailsVendor/composer" % (self.protocol, self.server, self.port)
+                url = "%s://%s:%s/api/scanDetails/maven" % (self.protocol, self.server, self.port)
                 headers = {
                         'Authorization': 'Basic QWRtaW5pc3RyYXRvcjpWZXJzYUAxMjM=',
                         'Content-Type': 'application/json'
@@ -733,10 +642,10 @@ modified versions of the software inside them, although the m
 
 Do you want to accept ?
         """
-        res = getComposerVulnerabilities(results.reportPath, results.projectname, results.target, owner)
+        res = getMavenVulnerabilities(results.reportPath, results.projectname, results.target, owner)
 
         if res.query_yes_no(data):
-                res.scanComposerPackage()
+                res.scanMavenPackage()
         else:
                 sys.exit(1)
 

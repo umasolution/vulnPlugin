@@ -132,7 +132,7 @@ class getNpmVulnerabilities():
 		return ver1
 				
 
-	def matchVer(self, versions, cve_id, mVers, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, dependancy):
+	def matchVer(self, versions, cve_id, mVers, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, dependancy, cwe_text):
 		versArray = self.getMatchVersionLists(product)
 		status, output = commands.getstatusoutput("semver -r %s %s" % (mVers, ' '.join(versArray)))
 		mVersions = output.split('\n')
@@ -172,6 +172,7 @@ class getNpmVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Introduced through'] = str(dependancy)
 				res['Versions'] = str(mVers)
+				res['CWE'] = str(cwe_text)
 
 				if res not in self.results['Issues'][severity]:
 		    			self.results['Issues'][severity].append(res)
@@ -211,6 +212,7 @@ class getNpmVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Introduced through'] = str(','.join(dependancy))
 				res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
 
 				if res not in self.results['Issues'][severity]:
 		    			self.results['Issues'][severity].append(res)
@@ -249,6 +251,7 @@ class getNpmVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Introduced through'] = str(','.join(dependancy))
 				res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
 
 				if res not in self.results['Issues'][severity]:
 		    			self.results['Issues'][severity].append(res)
@@ -288,6 +291,7 @@ class getNpmVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Introduced through'] = str(','.join(dependancy))
 				res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
 
 				if res not in self.results['Issues'][severity]:
 		    			self.results['Issues'][severity].append(res)
@@ -326,6 +330,7 @@ class getNpmVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Introduced through'] = str(','.join(dependancy))
 				res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
 
 				if res not in self.results['Issues'][severity]:
 		    			self.results['Issues'][severity].append(res)
@@ -362,6 +367,7 @@ class getNpmVulnerabilities():
 				res['pub_date'] = str(pub_date)
 				res['Introduced through'] = str(','.join(dependancy))
 				res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
 
 				if res not in self.results['Issues'][severity]:
 		    			self.results['Issues'][severity].append(res)
@@ -395,9 +401,10 @@ class getNpmVulnerabilities():
 			vuln_name = productName['vuln_name']
 			patch = productName['vulnerable version']
 			recommendation = productName['recommendation']
+			cwe_text = productName['cwe_text']
 
 
-			self.matchVer(versions, cve_id, mVersions, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, dependancy)
+			self.matchVer(versions, cve_id, mVersions, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, dependancy, cwe_text)
 
 	def getRequires2(self, d, pProduct, vVersion, ppProduct, vvVersion):
             for rDetail in d["requires"]:
@@ -624,31 +631,49 @@ class getNpmVulnerabilities():
 
 		print "[ OK ] Scanning started"
 
+		self.results['files'] = {}
 		self.results['Issues'] = {}
 		if 'files' in output:
-		    for filename in tqdm(output['files']):
+		    for filename in output['files']:
 			if filename not in self.testedWith:
 				self.testedWith.append(filename)
+			if filename not in self.results['files']:
+				self.results['files'] [filename] = {}
+				self.results['files'][filename]['packages'] = []
+			print "There are total %s %s files are processing" % (filename, len(output['files'][filename]))
 		        for file in output['files'][filename]:
+			    print "File %s Scanning Started" % file
 		            if 'lock' not in output['files'][filename][file]:
 				if 'devDependencies' in output['files'][filename][file]:
-	   	    	            for d in output[filename][file]['devDependencies']:
+	   	    	            for d in tqdm(output[filename][file]['devDependencies']):
 				    	product = d['product']
 				    	version = d['version']
 					if product not in self.dependanciesCount:
 				    		self.dependanciesCount.append(product)
 				    	self.getVulnData(product, version, filename, '')
+					res = {}
+					res['product'] = product
+					res['version'] = version
+					res['file'] = file
+					res['devDependencies'] = 'Yes'
+					self.results['files'][filename]['packages'].append(res)
 
 				if 'dependencies' in output['files'][filename][file]:
-		    	            for d in output['files'][filename][file]['dependencies']:
+		    	            for d in tqdm(output['files'][filename][file]['dependencies']):
 				    	product = d['product']
 				    	version = d['version']
 					if product not in self.dependanciesCount:
 				    		self.dependanciesCount.append(product)
 				    	self.getVulnData(product, version, filename, '')
+					res = {}
+					res['product'] = product
+					res['version'] = version
+					res['file'] = file
+					res['devDependencies'] = 'No'
+					self.results['files'][filename]['packages'].append(res)
 
 		    	    if 'lock' in output['files'][filename][file]:
-			        for d in output['files'][filename][file]:
+			        for d in tqdm(output['files'][filename][file]):
 			            if d != "lock":
 			    	        if "/" in d:
 					    product = d.split("/")[1]
@@ -661,6 +686,13 @@ class getNpmVulnerabilities():
 				        	self.dependanciesCount.append(product)
 			    	        dependancyDetails = output['files'][filename][file][d]['depend']
 			    	        self.getVulnData(product, version, filename, dependancyDetails)
+					res = {}
+					res['product'] = product
+					res['version'] = version
+					res['file'] = file
+					res['devDependencies'] = 'Yes'
+					res['Dependencies'] = dependancyDetails
+					self.results['files'][filename]['packages'].append(res)
 
 
 		print "[ OK ] Scanning Completed"

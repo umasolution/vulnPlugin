@@ -393,6 +393,7 @@ class getPipVulnerabilities():
 				res = {}
 				res['product'] = product.strip()
 				res['versions'] = versions.replace(" ", "")
+				res['File'] = 'local'
 				self.results['files']['requirement.txt']['packages'].append(res)
 				resultsPackage.append(product.strip())
 
@@ -410,6 +411,7 @@ class getPipVulnerabilities():
 				res = {}
 				res['product'] = product.strip()
 				res['versions'] = versions.replace(" ", "")
+				res['File'] = 'remote'
 				self.results['files']['requirement.txt']['packages'].append(res)
 				resultsPackage.append(product.strip())
 
@@ -437,6 +439,7 @@ class getPipVulnerabilities():
 							res = {}
 							res['product'] = product.strip()
 							res['versions'] = versions.replace(" ", "")
+							res['File'] = file
 							self.results['files'][filename]['packages'].append(res)
 							resultsPackage.append(product.strip())
 
