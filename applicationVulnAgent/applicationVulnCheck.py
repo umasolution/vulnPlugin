@@ -117,10 +117,9 @@ class applicationVulnerabilities():
                         return False
 
 
-	def matchVer(self, cve_id, severity, summary, versions, product, baseScore, accessVector, confidentialityImpact, integrityImpact, availabilityImpact, accessComplexity, authentication, reference, pub_date, mVers):
+	def matchVer(self, cve_id, severity, summary, versions, product, baseScore, accessVector, confidentialityImpact, integrityImpact, availabilityImpact, accessComplexity, authentication, reference, pub_date, mVers, cwe_text):
 		mVer = mVers
-                if not severity:
-                        severity = "Medium"
+
                 if severity.lower() == "medium" or severity.lower() == "moderate":
                         severity = "Medium"
                 elif severity.lower() == "high":
@@ -138,30 +137,41 @@ class applicationVulnerabilities():
                         if self.gtEq(vers1, mVer) and self.ltEq(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
+				res1 = {}
+				res1['CVEID'] = str(cve_id)
+				res1['Product'] = str(product)
+				res1['CWE'] = str(cwe_text)
+				res1['Severity'] = str(severity)
+
+                                res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+                                res['Summary'] = str(summary)
+                                res['Versions'] = str(versions)
+                                res['Base Score'] = str(baseScore)
+                                res['Access Vector'] = str(accessVector)
+                                res['Confidentiality Impact'] = str(confidentialityImpact)
+                                res['Integrity Impact'] = str(integrityImpact)
+                                res['Availability Impact'] = str(availabilityImpact)
+				res['Access Complexity'] = str(accessComplexity)
+				res['Authentication'] = str(authentication)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
+				res['CWE'] = str(cwe_text)
+				res['Severity'] = str(severity)
 
 				if product not in self.vuln_product:
 					self.vuln_product.append(product)
 
-                                if res not in self.results['Issues'][severity]:
+                                if res not in self.results['Issues'][severity]['data']:
 					self.vuln_found.append(product)
 
-                                        self.results['Issues'][severity].append(res)
+                                        self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -180,30 +190,41 @@ class applicationVulnerabilities():
                         if self.gt(vers1, mVer) and self.ltEq(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
+				res1 = {}
+				res1['CVEID'] = str(cve_id)
+				res1['Product'] = str(product)
+				res1['CWE'] = str(cwe_text)
+				res1['Severity'] = str(severity)
+
+                                res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+                                res['Summary'] = str(summary)
+                                res['Versions'] = str(versions)
+                                res['Base Score'] = str(baseScore)
+                                res['Access Vector'] = str(accessVector)
+                                res['Confidentiality Impact'] = str(confidentialityImpact)
+                                res['Integrity Impact'] = str(integrityImpact)
+                                res['Availability Impact'] = str(availabilityImpact)
+				res['Access Complexity'] = str(accessComplexity)
+				res['Authentication'] = str(authentication)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
+				res['CWE'] = str(cwe_text)
+				res['Severity'] = str(severity)
 
 				if product not in self.vuln_product:
 					self.vuln_product.append(product)
 
-                                if res not in self.results['Issues'][severity]:
+                                if res not in self.results['Issues'][severity]['data']:
 					self.vuln_found.append(product)
 
-                                        self.results['Issues'][severity].append(res)
+                                        self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -222,30 +243,41 @@ class applicationVulnerabilities():
                         if self.gtEq(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
+				res1 = {}
+				res1['CVEID'] = str(cve_id)
+				res1['Product'] = str(product)
+				res1['CWE'] = str(cwe_text)
+				res1['Severity'] = str(severity)
+
+                                res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+                                res['Summary'] = str(summary)
+                                res['Versions'] = str(versions)
+                                res['Base Score'] = str(baseScore)
+                                res['Access Vector'] = str(accessVector)
+                                res['Confidentiality Impact'] = str(confidentialityImpact)
+                                res['Integrity Impact'] = str(integrityImpact)
+                                res['Availability Impact'] = str(availabilityImpact)
+				res['Access Complexity'] = str(accessComplexity)
+				res['Authentication'] = str(authentication)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
+				res['CWE'] = str(cwe_text)
+				res['Severity'] = str(severity)
 
 				if product not in self.vuln_product:
 					self.vuln_product.append(product)
 
-                                if res not in self.results['Issues'][severity]:
+                                if res not in self.results['Issues'][severity]['data']:
 					self.vuln_found.append(product)
 
-                                        self.results['Issues'][severity].append(res)
+                                        self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -264,30 +296,42 @@ class applicationVulnerabilities():
                         if self.gt(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
+				res1 = {}
+				res1['CVEID'] = str(cve_id)
+				res1['Product'] = str(product)
+				res1['CWE'] = str(cwe_text)
+				res1['Severity'] = str(severity)
+
+                                res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+                                res['Summary'] = str(summary)
+                                res['Versions'] = str(versions)
+                                res['Base Score'] = str(baseScore)
+                                res['Access Vector'] = str(accessVector)
+                                res['Confidentiality Impact'] = str(confidentialityImpact)
+                                res['Integrity Impact'] = str(integrityImpact)
+                                res['Availability Impact'] = str(availabilityImpact)
+				res['Access Complexity'] = str(accessComplexity)
+				res['Authentication'] = str(authentication)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
+				res['CWE'] = str(cwe_text)
+				res['Severity'] = str(severity)
+
 
 				if product not in self.vuln_product:
 					self.vuln_product.append(product)
 
-                                if res not in self.results['Issues'][severity]:
+                                if res not in self.results['Issues'][severity]['data']:
 					self.vuln_found.append(product)
 
-                                        self.results['Issues'][severity].append(res)
+                                        self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -306,30 +350,41 @@ class applicationVulnerabilities():
                         if self.gt(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
+				res1 = {}
+				res1['CVEID'] = str(cve_id)
+				res1['Product'] = str(product)
+				res1['CWE'] = str(cwe_text)
+				res1['Severity'] = str(severity)
+
+                                res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+                                res['Summary'] = str(summary)
+                                res['Versions'] = str(versions)
+                                res['Base Score'] = str(baseScore)
+                                res['Access Vector'] = str(accessVector)
+                                res['Confidentiality Impact'] = str(confidentialityImpact)
+                                res['Integrity Impact'] = str(integrityImpact)
+                                res['Availability Impact'] = str(availabilityImpact)
+				res['Access Complexity'] = str(accessComplexity)
+				res['Authentication'] = str(authentication)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
+				res['CWE'] = str(cwe_text)
+				res['Severity'] = str(severity)
 
 				if product not in self.vuln_product:
 					self.vuln_product.append(product)
 
-                                if res not in self.results['Issues'][severity]:
+                                if res not in self.results['Issues'][severity]['data']:
 					self.vuln_found.append(product)
 
-                                        self.results['Issues'][severity].append(res)
+                                        self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -346,30 +401,41 @@ class applicationVulnerabilities():
                         if self.eq(vers1, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['cve_id'] = str(cve_id)
-				res['product'] = str(product)
-                                res['summary'] = str(summary)
-                                res['versions'] = str(versions)
-                                res['baseScore'] = str(baseScore)
-                                res['accessVector'] = str(accessVector)
-                                res['confidentialityImpact'] = str(confidentialityImpact)
-                                res['integrityImpact'] = str(integrityImpact)
-                                res['availabilityImpact'] = str(availabilityImpact)
-				res['accessComplexity'] = str(accessComplexity)
-				res['authentication'] = str(authentication)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
+				res1 = {}
+				res1['CVEID'] = str(cve_id)
+				res1['Product'] = str(product)
+				res1['CWE'] = str(cwe_text)
+				res1['Severity'] = str(severity)
+
+                                res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+                                res['Summary'] = str(summary)
+                                res['Versions'] = str(versions)
+                                res['Base Score'] = str(baseScore)
+                                res['Access Vector'] = str(accessVector)
+                                res['Confidentiality Impact'] = str(confidentialityImpact)
+                                res['Integrity Impact'] = str(integrityImpact)
+                                res['Availability Impact'] = str(availabilityImpact)
+				res['Access Complexity'] = str(accessComplexity)
+				res['Authentication'] = str(authentication)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
 				res['Vulnerable Version'] = str(mVers)
+				res['CWE'] = str(cwe_text)
+				res['Severity'] = str(severity)
 
 				if product not in self.vuln_product:
 					self.vuln_product.append(product)
 
-                                if res not in self.results['Issues'][severity]:
+                                if res not in self.results['Issues'][severity]['data']:
 					self.vuln_found.append(product)
 
-                                        self.results['Issues'][severity].append(res)
+                                        self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -397,12 +463,13 @@ class applicationVulnerabilities():
 			authentication = res['authentication']
 			reference = res['reference']
 			pub_date = res['pub_date']
+			cwe_text = res['cwe_text']
 
-			self.matchVer(cve_id, severity, summary, versions, product, baseScore, accessVector, confidentialityImpact, integrityImpact, availabilityImpact, accessComplexity, authentication, reference, pub_date, mVers)
+			self.matchVer(cve_id, severity, summary, versions, product, baseScore, accessVector, confidentialityImpact, integrityImpact, availabilityImpact, accessComplexity, authentication, reference, pub_date, mVers, cwe_text)
 
 	def getConfig(self):
             try:
-                url = "%s://%s:%s/api/getConfig/all" % (self.protocol, self.server, self.port)
+                url = "%s://%s:%s/api/getConfig" % (self.protocol, self.server, self.port)
                 headers = {
                         'Authorization': 'Basic QWRtaW5pc3RyYXRvcjpWZXJzYUAxMjM=',
                         'Content-Type': 'application/json'
@@ -496,7 +563,7 @@ class applicationVulnerabilities():
 
                 self.results['header']['Severity'] = {}
                 self.results['header']['Total Scanned Packages'] = len(self.scanApplications)
-                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
                 self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_product))
 		self.results['header']['Scanned Applications'] = ','.join(self.scanApplications)
                 self.results['header']['Severity']['Low'] = len(self.low)

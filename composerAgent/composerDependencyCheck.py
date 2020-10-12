@@ -132,12 +132,9 @@ class getComposerVulnerabilities():
 
                 return ver1
 
-	def matchVer(self, mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, dependancy, patch):
+	def matchVer(self, mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, dependancy, patch, cwe_text):
 		mVersions = self.getMatchVersionLists(product, vendor, mVersions)
 		mVer =  self.maxValue(mVersions)
-
-		if not severity:
-                        severity = "Medium"
 
                 if severity.lower() == "medium" or severity.lower() == "moderate":
                         severity = "Medium"
@@ -148,6 +145,8 @@ class getComposerVulnerabilities():
 		elif severity.lower() == "critical":
                         severity = "Critical"
 
+		if not patch:
+			patch = versions
 
 		for vers in versions.split(","):
                     if re.findall(r'\[.*:.*\]', str(vers)):
@@ -157,23 +156,33 @@ class getComposerVulnerabilities():
 			if self.gtEq(vers1, mVer) and self.ltEq(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(dependancy)
-                                res['Versions'] = str(mVer)
+				res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patched Version'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
+                                res['Installed Version'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
+                                if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -195,22 +204,32 @@ class getComposerVulnerabilities():
                         if self.gt(vers1, mVer) and self.ltEq(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
-                                res['Versions'] = str(mVer)
+				res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
 
-                                if res not in self.results['Issues'][severity]:
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patched Version'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
+                                res['Installed Version'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
+
+                                if res not in self.results['Issues'][severity]['data']:
                                         self.results['Issues'][severity].append(res)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
@@ -234,61 +253,34 @@ class getComposerVulnerabilities():
                         if self.gtEq(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
-                                res['Versions'] = str(mVer)
+				res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patched Version'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
+                                res['Installed Version'] = str(mVer)
+				res['CWE'] = str(cwe_text)
 
-                                        if severity.lower() == "medium" or severity.lower() == "moderate":
-                                                self.med.append("Medium")
-                                        if severity.lower() == "high":
-                                                self.hig.append("High")
-                                        if severity.lower() == "low":
-                                                self.low.append("Low")
-					if severity.lower() == "critical":
-                                                self.cri.append("Critical")
 
-                                        self.vuln_found.append(product)
-                                        if product not in self.vuln_depe:
-                                                self.vuln_depe.append(product)
-
-		    elif re.findall(r'\(.*:.*\)', str(vers)):
-                        vers1 = re.findall(r'\((.*):', str(vers))[0]
-                        vers2 = re.findall(r':(.*)\)', str(vers))[0]
-
-                        if self.gt(vers1, mVer) and self.lt(vers2, mVer):
-                                res = {}
-                                if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
-
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
-                                res['Versions'] = str(mVer)
-
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -310,23 +302,81 @@ class getComposerVulnerabilities():
                         if self.gt(vers1, mVer) and self.lt(vers2, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
-                                res['Versions'] = str(mVer)
+				res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patched Version'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
+                                res['Installed Version'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+                                if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
+
+                                        if severity.lower() == "medium" or severity.lower() == "moderate":
+                                                self.med.append("Medium")
+                                        if severity.lower() == "high":
+                                                self.hig.append("High")
+                                        if severity.lower() == "low":
+                                                self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
+
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
+
+		    elif re.findall(r'\(.*:.*\)', str(vers)):
+                        vers1 = re.findall(r'\((.*):', str(vers))[0]
+                        vers2 = re.findall(r':(.*)\)', str(vers))[0]
+
+                        if self.gt(vers1, mVer) and self.lt(vers2, mVer):
+                                res = {}
+                                if severity not in self.results['Issues']:
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
+
+				res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
+
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patched Version'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
+                                res['Installed Version'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
+
+                                if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -346,23 +396,34 @@ class getComposerVulnerabilities():
                         if self.eq(vers1, mVer):
                                 res = {}
                                 if severity not in self.results['Issues']:
-                                        self.results['Issues'][severity] = []
+                                        self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+					self.results['Issues'][severity]['header'] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
-                                res['Versions'] = str(mVer)
+				res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
 
-                                if res not in self.results['Issues'][severity]:
-                                        self.results['Issues'][severity].append(res)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patched Version'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
+                                res['Installed Version'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
+
+                                if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+					self.results['Issues'][severity]['header'].append(res1)
 
                                         if severity.lower() == "medium" or severity.lower() == "moderate":
                                                 self.med.append("Medium")
@@ -391,7 +452,8 @@ class getComposerVulnerabilities():
 			pub_date = row['pub_date']
 			patch = row['patch']
 			severity = row['severity']
-			self.matchVer(mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, depend, patch)
+			cwe_text = row['cwe_text']
+			self.matchVer(mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, depend, patch, cwe_text)
 
 
 	def getInstallPkgList(self):
@@ -569,7 +631,7 @@ class getComposerVulnerabilities():
 			if filename not in self.testedWith:
 				self.testedWith.append(filename)
 			if filename not in self.results['files']:
-				self.results['files'] [filename] = {}
+				self.results['files'][filename] = {}
 				self.results['files'][filename]['packages'] = []
 			print "There are total %s %s files are processing" % (filename, len(output['files'][filename]))
 			for file in output['files'][filename]:
@@ -596,7 +658,7 @@ class getComposerVulnerabilities():
 		self.results['header']['Tested With'] = ','.join(self.testedWith)
                 self.results['header']['Severity'] = {}
                 self.results['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
-                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
                 self.results['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
                 self.results['header']['Severity']['Low'] = len(self.low)
                 self.results['header']['Severity']['High'] = len(self.hig)

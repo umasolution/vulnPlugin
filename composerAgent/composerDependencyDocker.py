@@ -164,12 +164,9 @@ class getComposerVulnerabilities():
 
                 return ver1
 
-	def matchVer(self, mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, dependancy, patch, image):
+	def matchVer(self, mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, dependancy, patch, image, cwe_text):
 		mVersions = self.getMatchVersionLists(product, vendor, mVersions)
 		mVer =  self.maxValue(mVersions)
-
-		if not severity:
-                        severity = "Medium"
 
                 if severity.lower() == "medium" or severity.lower() == "moderate":
                         severity = "Medium"
@@ -191,18 +188,19 @@ class getComposerVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(dependancy)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
                                 res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -229,18 +227,20 @@ class getComposerVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
                                 res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -268,18 +268,20 @@ class getComposerVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
                                 res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -306,18 +308,20 @@ class getComposerVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
                                 res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -344,18 +348,20 @@ class getComposerVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
                                 res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -380,18 +386,20 @@ class getComposerVulnerabilities():
                                 if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Introduced through'] = str(','.join(dependancy))
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['CVEID'] = str(cve_id)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Introduced Through'] = str(dependancy)
                                 res['Versions'] = str(mVer)
+				res['CWE'] = str(cwe_text)
+
 
                                 if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -621,7 +629,8 @@ class getComposerVulnerabilities():
 			pub_date = row['pub_date']
 			patch = row['patch']
 			severity = row['severity']
-			self.matchVer(mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, depend, patch, image)
+			cwe_text = row['cwe_text']
+			self.matchVer(mVersions, product, vendor, cve_id, versions, reference, vuln_name, vectorString, baseScore, recommendation, pub_date, severity, depend, patch, image, cwe_text)
 
 
 	def getInstallPkgList(self, location, image):
@@ -782,7 +791,7 @@ class getComposerVulnerabilities():
 		self.cri = []
 		print "[ OK ] Scanning started"
 
-		self.results['packages'] = output['images']
+		self.results['packages'] = {}
 
 		print "[ OK ] There are are total %s images are processing" % len(output['images'])
 		for image in output['images']:
@@ -799,6 +808,7 @@ class getComposerVulnerabilities():
 				self.results['images'][image] = {}
 				self.results['images'][image]['Issues'] = {}
 				self.results['images'][image]['header'] = {}
+				self.results['packages'][image] = []
 				
 			if 'files' in output['images'][image]:
 				print "[ OK ] %s filename processing"
@@ -813,6 +823,13 @@ class getComposerVulnerabilities():
 						if product not in self.dependanciesCount:
 							self.dependanciesCount.append(product)
 						self.getVulnData(product, vendor, version[0], ','.join(depend), image)
+						res = {}
+						res['Vendor'] = vendor
+						res['Product'] = product
+						res['Versions'] = version
+						res['Dependancy'] = depend
+						res['FileName'] = filename
+						self.results['packages'][image].append(res)
 
                         self.results['images'][image]['header']['Severity'] = {}
                         self.results['images'][image]['header']['Severity']['Low'] = len(self.low)
@@ -820,7 +837,7 @@ class getComposerVulnerabilities():
                         self.results['images'][image]['header']['Severity']['Medium'] = len(self.med)
                         self.results['images'][image]['header']['Severity']['Critical'] = len(self.cri)
                         self.results['images'][image]['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
-                        self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                        self.results['images'][image]['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
                         self.results['images'][image]['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
 
 		print "[ OK ] Scanning Completed"

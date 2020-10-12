@@ -341,11 +341,9 @@ class getMavenVulnerabilities():
                 return self.resultsPkg
 
 
-	def matchVer(self, product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, image):
+	def matchVer(self, product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, image, cwe_text):
 		mVer = mVers
 		
-                if not severity:
-                        severity = "Medium"
                 if severity.lower() == "medium" or severity.lower() == "moderate":
                         severity = "Medium"
                 elif severity.lower() == "high":
@@ -365,17 +363,18 @@ class getMavenVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
+                                res['CVEID'] = str(cve_id)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
                                 res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
 
 				if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -403,18 +402,18 @@ class getMavenVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Versions'] = str(mVer)
-
+                                res['CVEID'] = str(cve_id)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
 
 				if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -442,57 +441,18 @@ class getMavenVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Versions'] = str(mVer)
-
-
-				if res not in self.results['images'][image]['Issues'][severity]:
-                                        self.results['images'][image]['Issues'][severity].append(res)
-
-                                        if severity.lower() == "medium" or severity.lower() == "moderate":
-                                                self.med.append("Medium")
-                                        if severity.lower() == "high":
-                                                self.hig.append("High")
-                                        if severity.lower() == "low":
-                                                self.low.append("Low")
-					if severity.lower() == "critical":
-                                                self.cri.append("Critical")
-
-                                        self.vuln_found.append(product)
-                                        if product not in self.vuln_depe:
-                                                self.vuln_depe.append(product)
-
-		    elif re.findall(r'\(.*:.*\)', str(vers)):
-                        vers1 = re.findall(r'\((.*):', str(vers))[0]
-                        vers2 = re.findall(r':(.*)\)', str(vers))[0]
-
-                        if self.gt(vers1, mVer) and self.lt(vers2, mVer):
-                                res = {}
-
-				if severity not in self.results['images'][image]['Issues']:
-                                        self.results['images'][image]['Issues'][severity] = []
-
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Versions'] = str(mVer)
+                                res['CVEID'] = str(cve_id)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
 
 
 				if res not in self.results['images'][image]['Issues'][severity]:
@@ -521,17 +481,57 @@ class getMavenVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Versions'] = str(mVer)
+                                res['CVEID'] = str(cve_id)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
+
+				if res not in self.results['images'][image]['Issues'][severity]:
+                                        self.results['images'][image]['Issues'][severity].append(res)
+
+                                        if severity.lower() == "medium" or severity.lower() == "moderate":
+                                                self.med.append("Medium")
+                                        if severity.lower() == "high":
+                                                self.hig.append("High")
+                                        if severity.lower() == "low":
+                                                self.low.append("Low")
+					if severity.lower() == "critical":
+                                                self.cri.append("Critical")
+
+                                        self.vuln_found.append(product)
+                                        if product not in self.vuln_depe:
+                                                self.vuln_depe.append(product)
+
+		    elif re.findall(r'\(.*:.*\)', str(vers)):
+                        vers1 = re.findall(r'\((.*):', str(vers))[0]
+                        vers2 = re.findall(r':(.*)\)', str(vers))[0]
+
+                        if self.gt(vers1, mVer) and self.lt(vers2, mVer):
+                                res = {}
+
+				if severity not in self.results['images'][image]['Issues']:
+                                        self.results['images'][image]['Issues'][severity] = []
+
+                                res['CVEID'] = str(cve_id)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
 
 				if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -557,17 +557,18 @@ class getMavenVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
                                         self.results['images'][image]['Issues'][severity] = []
 
-                                res['product'] = str(product)
-                                res['vendor'] = str(vendor)
-                                res['severity'] = str(severity)
-                                res['cve_id'] = str(cve_id)
-                                res['vectorString'] = str(vectorString)
-                                res['vuln_name'] = str(vuln_name)
-                                res['patch'] = str(patch)
-                                res['recommendation'] = str(recommendation)
-                                res['reference'] = str(reference)
-                                res['pub_date'] = str(pub_date)
-                                res['Versions'] = str(mVer)
+                                res['CVEID'] = str(cve_id)
+                                res['Product'] = str(product)
+                                res['Vendor'] = str(vendor)
+                                res['Severity'] = str(severity)
+                                res['Vector String'] = str(vectorString)
+                                res['Vulnerability Name'] = str(vuln_name)
+                                res['Patch'] = str(patch)
+                                res['Recommendation'] = str(recommendation)
+                                res['Reference'] = str(reference)
+                                res['Publish Date'] = str(pub_date)
+                                res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
 
 				if res not in self.results['images'][image]['Issues'][severity]:
                                         self.results['images'][image]['Issues'][severity].append(res)
@@ -601,11 +602,12 @@ class getMavenVulnerabilities():
                         patch = res['vulnerable version']
                         pub_date = res['pub_date']
                         severity = res['severity']
+			cwe_text = res['cwe_text']
 
 			if versions == "*":
 				versions = "[0.0:999.999.999.999]"
 
-                        self.matchVer(product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, image)
+                        self.matchVer(product, vendor, cve_id, reference, versions, vuln_name, vectorString, baseScore, recommendation, patch, pub_date, severity, mVers, image, cwe_text)
 
 	def genPkgVer(self):
                 if self.target.lower() == "local":
@@ -733,7 +735,7 @@ class getMavenVulnerabilities():
                         self.results['images'][image]['header']['Severity']['Medium'] = len(self.med)
                         self.results['images'][image]['header']['Severity']['Critical'] = len(self.cri)
                         self.results['images'][image]['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
-                        self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                        self.results['images'][image]['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
                         self.results['images'][image]['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
 
 		print "[ OK ] Scanning Completed"

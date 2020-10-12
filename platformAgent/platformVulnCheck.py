@@ -114,6 +114,7 @@ class platformVulnCheck():
 			if os_name == "debian":
 		    		if product not in self.results['remediation']:
 					self.results['remediation'][product] = {}
+					self.results['remediation'][product]['Product'] = product
 					self.results['remediation'][product]['CVEs'] = []
 					self.results['remediation'][product]['DSA-ID'] = []
 					self.results['remediation'][product]['Patched Version'] = ''
@@ -122,6 +123,7 @@ class platformVulnCheck():
 			if os_name == "ubuntu":
 		    		if product not in self.results['remediation']:
 					self.results['remediation'][product] = {}
+					self.results['remediation'][product]['Product'] = product
 					self.results['remediation'][product]['CVEs'] = []
 					self.results['remediation'][product]['USN-ID'] = []
 					self.results['remediation'][product]['Patched Version'] = ''
@@ -134,21 +136,31 @@ class platformVulnCheck():
 
 
                         res = {}
-                        res['cve_id'] = cve_id
+                        res['CVEID'] = cve_id
 			if cve_id not in self.results['remediation'][product]['CVEs']:
 				self.results['remediation'][product]['CVEs'].append(cve_id)
-                        res['product'] = product
-                        res['versions'] = versions
-                        res['vectorString'] = vectorString
-                        res['baseScore'] = baseScore
-                        res['pub_date'] = pub_date
-                        res['cwe'] = cwe
-                        res['name'] = name
-			res['severity'] = severity
+                        res['Product'] = product
+                        res['Versions'] = versions
+                        res['Vector String'] = vectorString
+                        res['Base Score'] = baseScore
+                        res['Publish Date'] = pub_date
+                        res['CWE'] = cwe
+                        res['Name'] = name
+			res['Severity'] = severity
 			severity = severity.lower()
 
+
+			res1 = {}
+                        res1['CVEID'] = str(cve_id)
+                        res1['Product'] = str(product)
+                        res1['CWE'] = str(cwe)
+                        res1['Severity'] = str(severity)
+
+
 			if severity not in self.results['Issues']:
-				self.results['Issues'][severity] = []
+				self.results['Issues'][severity] = {}
+				self.results['Issues'][severity]['data'] = []
+				self.results['Issues'][severity]['header'] = []
 
                         if os_name == "ubuntu":
                                 res['usn_id'] = usn_id
@@ -160,7 +172,7 @@ class platformVulnCheck():
 				if usn_id not in self.results['remediation'][product]['DSA-ID']:
 					self.results['remediation'][product]['DSA-ID'].append(usn_id)
 
-                        res['reference'] = reference
+                        res['Reference'] = reference
                         res['Installed Version'] = mVersions
                         res['Patch Version'] = versions
 
@@ -173,8 +185,9 @@ class platformVulnCheck():
                         if product not in self.vuln_product:
                                 self.vuln_product.append(product)
 
-			if res not in self.results['Issues'][severity]:
-                        	self.results['Issues'][severity].append(res)
+			if res not in self.results['Issues'][severity]['data']:
+                        	self.results['Issues'][severity]['data'].append(res)
+				self.results['Issues'][severity]['header'].append(res1)
 
                                 self.vuln_found.append(cve_id)
 
@@ -386,7 +399,7 @@ class platformVulnCheck():
 
                 self.results['header']['Severity'] = {}
                 self.results['header']['Total Scanned Packages'] = len(self.dependanciesCount)
-                self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                self.results['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
                 self.results['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_product))
                 self.results['header']['Severity']['Low'] = len(self.low)
                 self.results['header']['Severity']['High'] = len(self.hig)

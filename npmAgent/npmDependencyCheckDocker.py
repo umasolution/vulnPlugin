@@ -151,14 +151,12 @@ class getNpmVulnerabilities():
 		return ver1
 				
 
-	def matchVer(self, versions, cve_id, mVers, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, image, dependancy):
+	def matchVer(self, versions, cve_id, mVers, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, image, dependancy, cwe_text):
 		versArray = self.getMatchVersionLists(product)
 		status, output = commands.getstatusoutput("semver -r %s %s" % (mVers, ' '.join(versArray)))
 		mVersions = output.split('\n')
 		mVer =  self.maxValue(mVersions)
 
-		if not severity:
-			severity = "Medium"
 
 		if severity.lower() == "medium" or severity.lower() == "moderate":
 			severity = "Medium"
@@ -180,18 +178,19 @@ class getNpmVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
 					self.results['images'][image]['Issues'][severity] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(dependancy)
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patch'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
 				res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
 
 				if res not in self.results['images'][image]['Issues'][severity]:
 		    			self.results['images'][image]['Issues'][severity].append(res)
@@ -219,18 +218,20 @@ class getNpmVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
 					self.results['images'][image]['Issues'][severity] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patch'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
+
 
 				if res not in self.results['images'][image]['Issues'][severity]:
 		    			self.results['images'][image]['Issues'][severity].append(res)
@@ -257,18 +258,20 @@ class getNpmVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
 					self.results['images'][image]['Issues'][severity] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patch'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
+
 
 				if res not in self.results['images'][image]['Issues'][severity]:
 		    			self.results['images'][image]['Issues'][severity].append(res)
@@ -296,18 +299,20 @@ class getNpmVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
 					self.results['images'][image]['Issues'][severity] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patch'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
+
 
 				if res not in self.results['images'][image]['Issues'][severity]:
 		    			self.results['images'][image]['Issues'][severity].append(res)
@@ -334,18 +339,20 @@ class getNpmVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
 					self.results['images'][image]['Issues'][severity] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patch'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
+
 
 				if res not in self.results['images'][image]['Issues'][severity]:
 		    			self.results['images'][image]['Issues'][severity].append(res)
@@ -370,18 +377,20 @@ class getNpmVulnerabilities():
 				if severity not in self.results['images'][image]['Issues']:
 					self.results['images'][image]['Issues'][severity] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patch'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Versions'] = str(mVers)
+				res['CWE'] = cwe_text
+
 
 				if res not in self.results['images'][image]['Issues'][severity]:
 		    			self.results['images'][image]['Issues'][severity].append(res)
@@ -415,9 +424,10 @@ class getNpmVulnerabilities():
 			vuln_name = productName['vuln_name']
 			patch = productName['vulnerable version']
 			recommendation = productName['recommendation']
+			cwe_text = productName['cwe_text']
 
 
-			self.matchVer(versions, cve_id, mVersions, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, image, dependancy)
+			self.matchVer(versions, cve_id, mVersions, product, filename, severity, vectorString, baseScore, pub_date, vendor, reference, vuln_name, patch, recommendation, image, dependancy, cwe_text)
 
 	def getRequires2(self, d, pProduct, vVersion, ppProduct, vvVersion, image):
             for rDetail in d["requires"]:
@@ -740,84 +750,90 @@ class getNpmVulnerabilities():
 
 	def getInstallPkgList(self, location, image):
 	    for file in glob2.glob('%s/**/package*.json' % (location), recursive=True):
-		file = os.path.abspath(file)
-		filename = os.path.basename(file)
-		if filename not in self.testedWith:
+		try:
+		    file = os.path.abspath(file)
+		    filename = os.path.basename(file)
+		    if filename not in self.testedWith:
 			self.testedWith.append(filename)
 
-		self.filename = filename
-		self.file = file
+		    self.filename = filename
+		    self.file = file
 
-		with open(file) as f:
+		    print "Jayesh File - %s" % file
+		    with open(file) as f:
+			print "Jayesh File Print - %s" % f
 			data = json.load(f)
 
-		if 'lockfileVersion' in data:
+		    if 'lockfileVersion' in data:
 			lock = True
-		else:
+		    else:
 			lock = False
 			
 
-		if 'files' not in self.resultsPkg['images'][image]:
+		    if 'files' not in self.resultsPkg['images'][image]:
 			self.resultsPkg['images'][image]['files'] = {}
 
-		if self.filename not in self.resultsPkg['images'][image]['files']:
+		    if self.filename not in self.resultsPkg['images'][image]['files']:
 			self.resultsPkg['images'][image]['files'][self.filename] = {}
 
-		self.resultsPkg['images'][image]['files'][self.filename][file] = {}
+		    self.resultsPkg['images'][image]['files'][self.filename][file] = {}
 
 
-		if lock:
+		    if lock:
 		    	self.resultsPkg['images'][image]['files'][self.filename][file]['lock'] = {}
 			self.getPackageLockJson(data, image)
 
-		if not lock:	
-		    if 'dependencies' in data:
-		    	self.resultsPkg['images'][image]['files'][self.filename][file]['dependencies'] = []
-			for d in data['dependencies']:
-		    	    if "/" in d:
-				res = {}
-				product = d.split("/")[1]
-				if product not in self.packageLists:
+		    if not lock:	
+		        if 'dependencies' in data:
+		    	    self.resultsPkg['images'][image]['files'][self.filename][file]['dependencies'] = []
+			    for d in data['dependencies']:
+		    	        if "/" in d:
+				    res = {}
+				    product = d.split("/")[1]
+				    if product not in self.packageLists:
 					self.packageLists.append(str(product))
-				version = data['dependencies'][d]
-				res['product'] = product
-				res['version'] = version
-				res = ast.literal_eval(json.dumps(res))
-				self.resultsPkg['images'][image]['files'][self.filename][file]['dependencies'].append(res)
-			    else:
-				res = {}
-				product = d
-				version = data['dependencies'][d]
-				res['product'] = product
-				if product not in self.packageLists:
+				    version = data['dependencies'][d]
+				    res['product'] = product
+				    res['version'] = version
+				    res = ast.literal_eval(json.dumps(res))
+				    self.resultsPkg['images'][image]['files'][self.filename][file]['dependencies'].append(res)
+			        else:
+				    res = {}
+				    product = d
+				    version = data['dependencies'][d]
+				    res['product'] = product
+				    if product not in self.packageLists:
 					self.packageLists.append(str(product))
-				res['version'] = version
-				res = ast.literal_eval(json.dumps(res))
-				self.resultsPkg['images'][image]['files'][self.filename][file]['dependencies'].append(res)
+				    res['version'] = version
+				    res = ast.literal_eval(json.dumps(res))
+				    self.resultsPkg['images'][image]['files'][self.filename][file]['dependencies'].append(res)
 
-		    if 'devDependencies' in data:
-		    	self.resultsPkg['images'][image]['files'][self.filename][file]['devDependencies'] = []
-		    	for d in data['devDependencies']:
-			    if "/" in d:
-				res = {}
-				product = d.split("/")[1]
-				if product not in self.packageLists:
+		        if 'devDependencies' in data:
+		    	    self.resultsPkg['images'][image]['files'][self.filename][file]['devDependencies'] = []
+		    	    for d in data['devDependencies']:
+			        if "/" in d:
+				    res = {}
+				    product = d.split("/")[1]
+				    if product not in self.packageLists:
 					self.packageLists.append(str(product))
-				version = data['devDependencies'][d]
-				res['product'] = product
-				res['version'] = version
-				res = ast.literal_eval(json.dumps(res))
-				self.resultsPkg['images'][image]['files'][self.filename][file]['devDependencies'].append(res)
-			    else:
-				res = {}
-				product = d
-				if product not in self.packageLists:
+				    version = data['devDependencies'][d]
+				    res['product'] = product
+				    res['version'] = version
+				    res = ast.literal_eval(json.dumps(res))
+				    self.resultsPkg['images'][image]['files'][self.filename][file]['devDependencies'].append(res)
+			        else:
+				    res = {}
+				    product = d
+				    if product not in self.packageLists:
 					self.packageLists.append(str(product))
-				version = data['devDependencies'][d]
-				res['product'] = product
-				res['version'] = version
-				res = ast.literal_eval(json.dumps(res))
-				self.resultsPkg['images'][image]['files'][self.filename][file]['devDependencies'].append(res)
+				    version = data['devDependencies'][d]
+				    res['product'] = product
+				    res['version'] = version
+				    res = ast.literal_eval(json.dumps(res))
+				    self.resultsPkg['images'][image]['files'][self.filename][file]['devDependencies'].append(res)
+
+		except:
+		    pass
 
 		
 	def getUnique(self, lists):
@@ -846,7 +862,7 @@ class getNpmVulnerabilities():
 
 		print "[ OK ] Scanning started"
 	
-		self.results['packages'] = output['images']
+		self.results['packages'] = {}
 
 		print "[ OK ] There are total %s images are processing" % len(output['images'])
 		for image in output['images']:
@@ -858,10 +874,12 @@ class getNpmVulnerabilities():
 		    self.vuln_found = []
 		    self.vuln_depe = [] 
 		    print "[ OK ] %s image scanning started" % image
+
 		    if image not in self.results['images']:
 			self.results['images'][image] = {}
 		    	self.results['images'][image]['Issues'] = {}
 			self.results['images'][image]['header'] = {}
+			self.results['packages'][image] = []
 
 
 		    if 'files' in output['images'][image]:
@@ -881,6 +899,11 @@ class getNpmVulnerabilities():
 						if product not in self.dependanciesCount:
 				    	    		self.dependanciesCount.append(product)
 				    	    	self.getVulnData(product, version, filename, image, '')
+						res = {}
+						res['Product'] = product
+						res['Versions'] = version
+						res['FileName'] = file
+						self.results['packages'][image].append(res)
 
 					if 'dependencies' in output['images'][image]['files'][filename][file]:
 		    	                    for d in tqdm(output['images'][image]['files'][filename][file]['dependencies']):
@@ -889,6 +912,11 @@ class getNpmVulnerabilities():
 						if product not in self.dependanciesCount:
 				    	    		self.dependanciesCount.append(product)
 				    	    	self.getVulnData(product, version, filename, image, '')
+						res = {}
+						res['Product'] = product
+						res['Versions'] = version
+						res['FileName'] = file
+						self.results['packages'][image].append(res)
 
 		    	            if 'lock' in output['images'][image]['files'][filename][file]:
 			                for d in tqdm(output['images'][image]['files'][filename][file]):
@@ -905,13 +933,19 @@ class getNpmVulnerabilities():
 			    	                dependancyDetails = output['images'][image]['files'][filename][file][d]['depend']
 			    	                self.getVulnData(product, version, filename, image, dependancyDetails)
 
+						res = {}
+						res['Product'] = product
+						res['Versions'] = version
+						res['FileName'] = file
+						self.results['packages'][image].append(res)
+
 			self.results['images'][image]['header']['Severity'] = {}
                 	self.results['images'][image]['header']['Severity']['Low'] = len(self.low)
                 	self.results['images'][image]['header']['Severity']['High'] = len(self.hig)
                 	self.results['images'][image]['header']['Severity']['Medium'] = len(self.med)
                 	self.results['images'][image]['header']['Severity']['Critical'] = len(self.cri)
                 	self.results['images'][image]['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
-                	self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                	self.results['images'][image]['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
                 	self.results['images'][image]['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
 
 

@@ -115,25 +115,25 @@ class platformVulnCheckDocker():
 	def matchVer(self, cve_id, product, versions, vectorString, baseScore, pub_date, cwe, name, usn_id, reference, mVersions, os_name, severity, image):
             	if self.lt(versions, mVersions):
 			res = {}
-			res['cve_id'] = cve_id
-			res['product'] = product
-			res['versions'] = versions
-			res['vectorString'] = vectorString
-			res['baseScore'] = baseScore
-			res['pub_date'] = pub_date
-			res['cwe'] = cwe
-			res['name'] = name
-			res['severity'] = severity
+			res['CVEID'] = cve_id
+			res['Product'] = product
+			res['Versions'] = versions
+			res['Vector String'] = vectorString
+			res['Base Score'] = baseScore
+			res['Publish Date'] = pub_date
+			res['CWE'] = cwe
+			res['Name'] = name
+			res['Severity'] = severity
 			severity = severity.lower()
 
 			if os_name == "ubuntu":
-				res['usn_id'] = usn_id
+				res['USN_ID'] = usn_id
 			elif os_name == "debian":
-				res['dsa_id'] = usn_id
+				res['DSA ID'] = usn_id
 			else:
-				res['id'] = usn_id
+				res['ID'] = usn_id
 
-			res['reference'] = reference
+			res['Reference'] = reference
 			res['Installed Version'] = mVersions
 			res['Patch Version'] = versions
 
@@ -624,7 +624,7 @@ class platformVulnCheckDocker():
 		output = self.getInstallPkgList()
 		print "[ OK ] Scanning started"
 		self.results['images'] = {}
-		self.results['packages'] = output
+		self.results['packages'] = {}
 
 		for image in output:
 		    self.low = []
@@ -648,6 +648,7 @@ class platformVulnCheckDocker():
 				self.results['images'][image]['header']['os version'] = os_version
 				self.results['images'][image]['header']['os type'] = os_type
 				self.results['images'][image]['Issues'] = {}
+				self.results['packages'][image] = []
 			
 			self.syncData(os_name)
 
@@ -667,10 +668,16 @@ class platformVulnCheckDocker():
 					self.dependanciesCount.append(product)
 				
 			    	self.getVulnData(product, version, platform, os_name, image)
+				res = {}
+				res['Product'] = product
+				res['Version'] = version
+				res['Arch'] = arch
+				res['Platform'] = platform
+				self.results['packages'][image].append(res)
 
                 	self.results['images'][image]['header']['Severity'] = {}
                 	self.results['images'][image]['header']['Total Scanned Packages'] = len(self.dependanciesCount)
-                	self.results['images'][image]['header']['Total Vulnerabilities'] = len(self.vuln_found)
+                	self.results['images'][image]['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
                 	self.results['images'][image]['header']['Total Vulnerable Packages'] = len(self.getUnique(self.vuln_depe))
                 	self.results['images'][image]['header']['Severity']['Low'] = len(self.low)
                 	self.results['images'][image]['header']['Severity']['High'] = len(self.hig)

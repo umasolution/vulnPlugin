@@ -139,8 +139,7 @@ class getNpmVulnerabilities():
 		mVer =  self.maxValue(mVersions)
 
 		if not severity:
-			severity = "Medium"
-
+			severity = 'medium'
 		if severity.lower() == "medium" or severity.lower() == "moderate":
 			severity = "Medium"
 		elif severity.lower() == "high":
@@ -150,6 +149,9 @@ class getNpmVulnerabilities():
 		elif severity.lower() == "critical":
 			severity = "Critical"
 
+		if not patch:
+			patch = versions
+
     		for vers in versions.split(","):
        		    if re.findall(r'\[.*:.*\]', str(vers)):
             		vers1 = re.findall(r'\[(.*):', str(vers))[0]
@@ -158,24 +160,34 @@ class getNpmVulnerabilities():
             		if self.gtEq(vers1, mVer) and self.ltEq(vers2, mVer):
 		    		res = {}
 				if severity not in self.results['Issues']:
-					self.results['Issues'][severity] = []
+					self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+                                        self.results['Issues'][severity]['header'] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(dependancy)
-				res['Versions'] = str(mVers)
+                                res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
+
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patched Version'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Installed Version'] = str(mVers)
 				res['CWE'] = str(cwe_text)
 
-				if res not in self.results['Issues'][severity]:
-		    			self.results['Issues'][severity].append(res)
+
+				if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+                                        self.results['Issues'][severity]['header'].append(res1)
 
 			        	if severity.lower() == "medium" or severity.lower() == "moderate":
 				    		self.med.append("Medium")
@@ -198,24 +210,34 @@ class getNpmVulnerabilities():
             		if self.gt(vers1, mVer) and self.ltEq(vers2, mVer):
 				res = {}
 				if severity not in self.results['Issues']:
-					self.results['Issues'][severity] = []
+					self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+                                        self.results['Issues'][severity]['header'] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+                                res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
+
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patched Version'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Installed Version'] = str(mVers)
 				res['CWE'] = str(cwe_text)
 
-				if res not in self.results['Issues'][severity]:
-		    			self.results['Issues'][severity].append(res)
+
+				if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+                                        self.results['Issues'][severity]['header'].append(res1)
 
 			        	if severity.lower() == "medium" or severity.lower() == "moderate":
 				    		self.med.append("Medium")
@@ -237,24 +259,34 @@ class getNpmVulnerabilities():
             		if self.gtEq(vers1, mVer) and self.lt(vers2, mVer):
 				res = {}
 				if severity not in self.results['Issues']:
-					self.results['Issues'][severity] = []
+					self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+                                        self.results['Issues'][severity]['header'] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+                                res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
+
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patched Version'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Installed Version'] = str(mVers)
 				res['CWE'] = str(cwe_text)
 
-				if res not in self.results['Issues'][severity]:
-		    			self.results['Issues'][severity].append(res)
+
+				if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+                                        self.results['Issues'][severity]['header'].append(res1)
 
 			        	if severity.lower() == "medium" or severity.lower() == "moderate":
 				    		self.med.append("Medium")
@@ -277,24 +309,34 @@ class getNpmVulnerabilities():
             		if self.gt(vers1, mVer) and self.lt(vers2, mVer):
 				res = {}
 				if severity not in self.results['Issues']:
-					self.results['Issues'][severity] = []
+					self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+                                        self.results['Issues'][severity]['header'] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+                                res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
+
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patched Version'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Installed Version'] = str(mVers)
 				res['CWE'] = str(cwe_text)
 
-				if res not in self.results['Issues'][severity]:
-		    			self.results['Issues'][severity].append(res)
+
+				if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+                                        self.results['Issues'][severity]['header'].append(res1)
 
 			        	if severity.lower() == "medium" or severity.lower() == "moderate":
 				    		self.med.append("Medium")
@@ -316,24 +358,34 @@ class getNpmVulnerabilities():
             		if self.gt(vers1, mVer) and self.lt(vers2, mVer):
 				res = {}
 				if severity not in self.results['Issues']:
-					self.results['Issues'][severity] = []
+					self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+                                        self.results['Issues'][severity]['header'] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+                                res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
+
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patched Version'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Installed Version'] = str(mVers)
 				res['CWE'] = str(cwe_text)
 
-				if res not in self.results['Issues'][severity]:
-		    			self.results['Issues'][severity].append(res)
+
+				if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+                                        self.results['Issues'][severity]['header'].append(res1)
 
 			        	if severity.lower() == "medium" or severity.lower() == "moderate":
 				    		self.med.append("Medium")
@@ -353,24 +405,34 @@ class getNpmVulnerabilities():
             		if self.eq(vers1, mVer):
 				res = {}
 				if severity not in self.results['Issues']:
-					self.results['Issues'][severity] = []
+					self.results['Issues'][severity] = {}
+					self.results['Issues'][severity]['data'] = []
+                                        self.results['Issues'][severity]['header'] = []
 
-				res['product'] = str(product)
-				res['vendor'] = str(vendor)
-				res['severity'] = str(severity)
-				res['cve_id'] = str(cve_id)
-				res['vectorString'] = str(vectorString)
-				res['vuln_name'] = str(vuln_name)
-				res['patch'] = str(patch)
-				res['recommendation'] = str(recommendation)
-				res['reference'] = str(reference)
-				res['pub_date'] = str(pub_date)
-				res['Introduced through'] = str(','.join(dependancy))
-				res['Versions'] = str(mVer)
+                                res1 = {}
+                                res1['CVEID'] = str(cve_id)
+                                res1['Product'] = str(product)
+                                res1['CWE'] = str(cwe_text)
+                                res1['Severity'] = str(severity)
+
+				res['CVEID'] = str(cve_id)
+				res['Product'] = str(product)
+				res['Vendor'] = str(vendor)
+				res['Severity'] = str(severity)
+				res['Vector String'] = str(vectorString)
+				res['Vulnerability Name'] = str(vuln_name)
+				res['Patched Version'] = str(patch)
+				res['Recommendation'] = str(recommendation)
+				res['Reference'] = str(reference)
+				res['Publish Date'] = str(pub_date)
+				res['Introduced Through'] = str(dependancy)
+				res['Installed Version'] = str(mVers)
 				res['CWE'] = str(cwe_text)
 
-				if res not in self.results['Issues'][severity]:
-		    			self.results['Issues'][severity].append(res)
+
+				if res not in self.results['Issues'][severity]['data']:
+					self.results['Issues'][severity]['data'].append(res)
+                                        self.results['Issues'][severity]['header'].append(res1)
 
 			        	if severity.lower() == "medium" or severity.lower() == "moderate":
 				    		self.med.append("Medium")
@@ -389,6 +451,7 @@ class getNpmVulnerabilities():
 	def getVulnData(self, product, mVersions, filename, dependancy):
 		if product in self.responseData["results"]:
 		    for productName in self.responseData["results"][product]:
+			print "--- %s" % productName
                         cve_id = productName['cve_id']
 			product = productName['product']
 			versions = productName['versions']
@@ -399,7 +462,7 @@ class getNpmVulnerabilities():
 			vendor = productName['vendor']
 			reference = productName['reference']
 			vuln_name = productName['vuln_name']
-			patch = productName['vulnerable version']
+			patch = productName['patch']
 			recommendation = productName['recommendation']
 			cwe_text = productName['cwe_text']
 
@@ -645,7 +708,8 @@ class getNpmVulnerabilities():
 			    print "File %s Scanning Started" % file
 		            if 'lock' not in output['files'][filename][file]:
 				if 'devDependencies' in output['files'][filename][file]:
-	   	    	            for d in tqdm(output[filename][file]['devDependencies']):
+	   	    	            for d in tqdm(output['files'][filename][file]['devDependencies']):
+					print "1 - %s" % product
 				    	product = d['product']
 				    	version = d['version']
 					if product not in self.dependanciesCount:
@@ -662,6 +726,7 @@ class getNpmVulnerabilities():
 		    	            for d in tqdm(output['files'][filename][file]['dependencies']):
 				    	product = d['product']
 				    	version = d['version']
+					print "2 - %s" % product
 					if product not in self.dependanciesCount:
 				    		self.dependanciesCount.append(product)
 				    	self.getVulnData(product, version, filename, '')
@@ -682,6 +747,7 @@ class getNpmVulnerabilities():
 					    product = d
 					    version = output['files'][filename][file][d]["version"]
 
+					print "3 - %s" % product
 					if product not in self.dependanciesCount:
 				        	self.dependanciesCount.append(product)
 			    	        dependancyDetails = output['files'][filename][file][d]['depend']
@@ -700,7 +766,7 @@ class getNpmVulnerabilities():
 		self.results['header']['Tested With'] = ','.join(self.testedWith)
 		self.results['header']['Severity'] = {}
 		self.results['header']['Total Scanned Dependancies'] = len(self.dependanciesCount)
-		self.results['header']['Total Vulnerabilities'] = len(self.vuln_found)
+		self.results['header']['Total Unique Vulnerabilities'] = len(self.vuln_found)
 		self.results['header']['Total Vulnerable Dependencies'] = len(self.getUnique(self.vuln_depe))
 		self.results['header']['Severity']['Low'] = len(self.low)
 		self.results['header']['Severity']['High'] = len(self.hig)
